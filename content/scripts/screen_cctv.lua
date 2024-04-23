@@ -51,7 +51,7 @@ function update(screen_w, screen_h, ticks)
                 if v:get() then
                     local rp = update_get_map_vehicle_position_relate_to_parent_vehicle(screen_vehicle:get_id(), v:get_id())
                     local ds = v:get_dock_state()
-                    if (ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking) and rp:z() > dv_z then
+                    if (ds == e_vehicle_dock_state.docking or ds == e_vehicle_dock_state.undocking or ds == e_vehicle_dock_state.undock_holding) and rp:z() > dv_z then
                         docking_vehicle = v
                         dv_z = rp:z()
                     end
