@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<data name="Revolution 1.3.13" author="Thumblegudget, Bredroll, QuantX, NexusQuille, Xuptio" description="
+<data name="Revolution 1.4 Alpha" author="Thumblegudget, Bredroll, QuantX, NexusQuille, Xuptio" description="
 The Revolution mod brings Radar enhancements, a more immersive fog-of-war for island captures and
 other enhancements.
 
-v1.3.13 changes:
+v1.3:
 * fix the mystery-island extension mod so that island types are now hidden when in the fog of war
-
-v1.3.12 changes:
 * when used with Tactical Operations Centre the carrier is equipped with a 4x laser missile VLS
-
-v1.3.11 changes:
 * fixed a bug where at some zoom levels island captures would show colours despite for of war
-
-v1.3.10 changes:
-
 * walrus now able to mount a combat droid on the back utility slot
 * albatross restored to 4x wing hardpoints (plus AWACS)
 * added visual HUD waypoint/guide for nearest friendly carrier
