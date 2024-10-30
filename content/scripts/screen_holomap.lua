@@ -944,6 +944,8 @@ function _update(screen_w, screen_h, ticks)
                     update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
                     update_ui_text(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_attack_type, 128, 0, color_black, 0)
                 end
+
+                draw_map_radar_state_indicator(vehicle, screen_pos_x, screen_pos_y, g_animation_time)
                 
                 -- Waypoint cleanup for the carrier
                 if waypoint_remove > -1 then

@@ -1031,33 +1031,75 @@ function _get_unit_visible_by_modded_radar(vehicle, other_unit)
     return false
 end
 
-function get_awacs_radar_enabled(vehicle)
-    -- if enabled and not damaged
+function get_vehicle_radar_state(vehicle)
+    local state = nil
     if vehicle and vehicle:get() then
         local radar_pos = _get_awacs_radar_attachment_position(vehicle)
         if radar_pos > -1 then
             if vehicle:get_definition_index() == e_game_object_type.chassis_carrier then
+                -- carrier radar can be damaged, blocked (storms), "off" or "on"
                 local carrier_radar = vehicle:get_attachment(radar_pos)
                 if carrier_radar ~= nil then
                     local radar_mode = carrier_radar:get_control_mode()
                     if radar_mode == "off" then
-                        return false
+                        return "off"
                     end
                     if carrier_radar.get_is_damaged ~= nil and carrier_radar:get_is_damaged() then
-                        return false
+                        return "damaged"
                     end
                     if get_radar_interference(vehicle, carrier_radar) then
-                        return false
+                        return "blocked"
                     end
                 else
                     -- no radar fitted?
-                    return false
+                    return nil
                 end
             end
-            return true
+            return "on"
         end
     end
 
+    return state
+end
+
+function draw_map_radar_state_indicator(vehicle, x, y, anim)
+    if not get_vehicle_docked(vehicle) then
+        local x_offset = 4
+        local y_offset = 2
+        local radar_state = get_vehicle_radar_state(vehicle)
+        if radar_state ~= nil then
+            if vehicle:get_definition_index() ~= e_game_object_type.chassis_carrier then
+                x_offset = 1
+                y_offset = 0
+            end
+            local radar_icon_color = color_enemy
+            if radar_state == "damaged" or radar_state == "blocked" then
+                if anim % 20 < 10 then
+                    radar_icon_color = color_status_dark_green
+                end
+            elseif radar_state == "on" then
+                radar_icon_color = color_grey_dark
+                if anim % 60 < 30 then
+                    radar_icon_color = color_white
+                end
+            end
+            update_ui_image(
+                    x + x_offset,
+                    y + y_offset,
+                    atlas_icons.column_power, radar_icon_color, 0
+            )
+        end
+
+    end
+end
+
+function get_awacs_radar_enabled(vehicle)
+    local state = get_vehicle_radar_state(vehicle)
+    if state ~= nil then
+        if state == "on" then
+            return true
+        end
+    end
     return false
 end
 

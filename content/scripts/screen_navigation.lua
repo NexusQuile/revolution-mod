@@ -252,6 +252,13 @@ function update(screen_w, screen_h, ticks)
                             if show_target then
                                 update_ui_image(screen_pos_x - icon_offset, screen_pos_y - icon_offset, region_vehicle_icon, element_color, 0)
                             end
+
+                            if screen_team == vehicle_team then
+                                if update_get_screen_vehicle():get_id() == vehicle:get_id() then
+                                    -- friendly
+                                    draw_map_radar_state_indicator(vehicle, screen_pos_x, screen_pos_y, g_animation_time)
+                                end
+                            end
                         end
                     end
                 end

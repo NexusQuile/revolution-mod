@@ -2193,6 +2193,7 @@ function _update(screen_w, screen_h, ticks)
 
                                     update_ui_line(screen_pos_x, screen_pos_y, screen_pos_x + (vehicle_dir:x() * 20), screen_pos_y + (vehicle_dir:y() * -20), color_white)
                                 end
+                                draw_map_radar_state_indicator(vehicle, screen_pos_x, screen_pos_y, g_animation_time)
 
                                 local damage_indicator_factor = vehicle:get_damage_indicator_factor()
                                 local damage_factor = clamp(vehicle:get_hitpoints() / vehicle:get_total_hitpoints(), 0, 1)
