@@ -1698,3 +1698,11 @@ end
 --if not st then
 --    print(err)
 --end
+
+function table_append_max(tab, value, max_num)
+    -- append a value to a list, trimming the list to max_num elements
+    table.insert(tab, value)
+    if #tab > max_num then
+        table.remove(tab, 1)
+    end
+end
