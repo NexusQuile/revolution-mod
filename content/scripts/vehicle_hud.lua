@@ -2124,6 +2124,8 @@ function render_atachment_projectile_cooldown(pos, attachment, is_heavy, col)
     end
 end
 
+g_current_info_target = nil
+
 function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, attachment, def) 
     local hud_pos = vec2(screen_w / 2, screen_h / 2)
     local col = color8(0, 255, 0, 255)
@@ -2155,12 +2157,46 @@ function render_attachment_hud_cannon(screen_w, screen_h, map_data, vehicle, att
             projectile_velocity:y(projectile_velocity:y() * projectile_speed)
             projectile_velocity:z(projectile_velocity:z() * projectile_speed)
 
+
             local step_amounts = { 1000, 500, 250, 100 }
 --            if def == e_game_object_type.attachment_turret_heavy_cannon then step_amounts = { 800, 400, 200, 100 } end
             local step = step_amounts[math.floor(zoom_power) + 1]
 
-            for i = step, step * 4, step do
-                if i > 0 and i <= step_amounts[1] * 2 then
+            local function get_drop_pos(dist)
+                local travel_time = dist / (projectile_speed / 30)
+                local drop_position = update_get_camera_position()
+                drop_position:x(drop_position:x() + projectile_velocity:x() * travel_time)
+                drop_position:y(drop_position:y() + projectile_velocity:y() * travel_time - 0.5 * projectile_gravity * travel_time * travel_time)
+                drop_position:z(drop_position:z() + projectile_velocity:z() * travel_time)
+                return drop_position
+            end
+
+            if g_current_info_target ~= nil then
+                local target_v = g_current_info_target.vehicle
+                if target_v and target_v:get() then
+                    local dist = math.sqrt(g_current_info_target.dist_sq)
+                    local drop_position = get_drop_pos(dist)
+                    local screen_pos = update_world_to_screen(drop_position)
+                    local v_y = screen_pos:y()
+                    if v_y > screen_h / 2 and v_y < 0.88 * screen_h then
+                        update_ui_line(
+                                hud_pos:x() - 6,
+                                v_y,
+                                hud_pos:x(),
+                                v_y,
+                                color_white)
+                        update_ui_line(
+                                hud_pos:x(),
+                                v_y - 2,
+                                hud_pos:x(),
+                                v_y + 3,
+                                color_white)
+                    end
+                end
+            end
+
+            for i = step, step * 5, step do
+                if i > 0 and i <= step_amounts[1] * 3 then
                     local travel_time = math.max(1, i) / (projectile_speed / 30)
                     local drop_position = update_get_camera_position()
                     drop_position:x(drop_position:x() + projectile_velocity:x() * travel_time)
@@ -3780,8 +3816,11 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
 
     -- Always draw info on top
     if vehicle_info_data ~= nil then
+        g_current_info_target = vehicle_info_data
         render_target_vehicle_info(vehicle_info_data.screen_pos, vehicle_info_data, colors.green)
         render_target_vehicle_peers(vehicle_info_data.screen_pos, vehicle_info_data, colors.green)
+    else
+        g_current_info_target = nil
     end
 
     if is_vision_reveal_targets and target_hovered ~= nil and target_hovered.type == 1 and target_hovered.vehicle:get_is_observation_fully_revealed() == false then
