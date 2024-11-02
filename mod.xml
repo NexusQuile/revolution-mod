@@ -3,6 +3,10 @@
 The Revolution mod brings Radar enhancements, a more immersive fog-of-war for island captures and
 other enhancements.
 
+v1.4:
+* Carrier and other units carrying RADAR show a map symbol on holomap, control and nav screens.
+  If carrier radar is offline the symbol is red or damaged the symbol flashes red/grey.
+
 v1.3:
 * fix the mystery-island extension mod so that island types are now hidden when in the fog of war
 * when used with Tactical Operations Centre the carrier is equipped with a 4x laser missile VLS
