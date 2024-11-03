@@ -1056,6 +1056,11 @@ function get_vehicle_radar_state(vehicle)
                 end
             end
             return "on"
+        else
+            local radar_type = _get_radar_attachment(vehicle)
+            if radar_type ~= nil then
+                return "on"
+            end
         end
     end
 
@@ -1064,6 +1069,12 @@ end
 
 function draw_map_radar_state_indicator(vehicle, x, y, anim)
     if not get_vehicle_docked(vehicle) then
+       if not get_is_spectator_mode() then
+            if vehicle:get_team() ~= update_get_screen_team_id() then
+                return
+            end
+        end
+        local radar_radius = 0
         local x_offset = 4
         local y_offset = 2
         local radar_state = get_vehicle_radar_state(vehicle)
@@ -3340,4 +3351,24 @@ function get_aircraft_payload_weight(vehicle)
         end
     end
     return value
+end
+
+function x_pixels_per_metre(m)
+    local vst, v = pcall(
+            function()
+                if g_is_holomap then
+                    local x, y = get_holomap_from_world( m, 0, g_screen_w, g_screen_h)
+                    return x
+                else
+                    local x, y = get_screen_from_world( m, 0, g_camera_pos_x, g_camera_pos_y, g_camera_size, g_screen_w, g_screen_h)
+                    return x
+                end
+            end
+    )
+    if vst then
+        return v
+    else
+        local_print("error:" .. v)
+    end
+    return 0
 end
