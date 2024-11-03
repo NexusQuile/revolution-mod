@@ -749,7 +749,7 @@ function begin_load_inventory_data()
     for k, v in pairs(g_item_data) do
         local item_data = v
         local category_data = g_item_categories[item_data.category]
-        
+
         if category_data ~= nil then
             table.insert(category_data.items, item_data)
             category_data.item_count = category_data.item_count + 1
@@ -3270,6 +3270,20 @@ function get_internal_fuel_size(vehicle_definition_index)
     return value
 end
 
+function iter_hostile_units(team, func)
+    local vehicle_count = update_get_map_vehicle_count()
+    for i = 0, vehicle_count - 1 do
+        local vehicle = update_get_map_vehicle_by_index(i)
+
+        if vehicle:get() then
+            local vehicle_team = vehicle:get_team()
+            if vehicle_team ~= team then
+                func(vehicle)
+            end
+        end
+    end
+end
+
 function iter_team_units(team, func)
     local vehicle_count = update_get_map_vehicle_count()
     for i = 0, vehicle_count - 1 do
@@ -3353,22 +3367,127 @@ function get_aircraft_payload_weight(vehicle)
     return value
 end
 
-function x_pixels_per_metre(m)
-    local vst, v = pcall(
-            function()
-                if g_is_holomap then
-                    local x, y = get_holomap_from_world( m, 0, g_screen_w, g_screen_h)
-                    return x
-                else
-                    local x, y = get_screen_from_world( m, 0, g_camera_pos_x, g_camera_pos_y, g_camera_size, g_screen_w, g_screen_h)
-                    return x
-                end
-            end
-    )
-    if vst then
-        return v
-    else
-        local_print("error:" .. v)
+
+-- vehicle history class and data
+VehicleHistory = {}
+VehicleHistory.__index = VehicleHistory
+
+function VehicleHistory:new(vehicle)
+    local self = {}
+    setmetatable(self, VehicleHistory)
+    self.id = vehicle:get_id()
+    self.max_history = 10
+    self.update_interval = 10
+    self.position = {}
+    -- self.fuel = {}
+    self.updated = 0
+    self:record_data(vehicle)
+    return self
+end
+
+function VehicleHistory:update()
+    local vehicle = update_get_map_vehicle_by_id(self.id)
+    if vehicle and vehicle:get() then
+        self:record_data(vehicle)
     end
-    return 0
+end
+
+function VehicleHistory:record_data(vehicle)
+    local now = update_get_logic_tick()
+    local pos = vehicle:get_position_xz()
+
+    table_append_max(self.position, pos, self.max_history)
+    --table_append_max(self.fuel, vehicle:get_fuel_factor(), self.max_history)
+    self.updated = now
+end
+
+--function VehicleHistory:get_fuel_rate()
+--    local fuel_tab = self.fuel
+--    if #fuel_tab > 2 then
+--        local burn = fuel_tab[#fuel_tab] - fuel_tab[#fuel_tab - 1]
+--        if burn > 0 and burn < 1 then
+--            return burn
+--        end
+--    end
+--    return 0
+--end
+
+function VehicleHistory:get_velocity()
+    local pos_tab = self.position
+    if #pos_tab > 2 then
+        local p1 = pos_tab[1]
+        local p2 = pos_tab[#pos_tab]
+
+        local dx = p2:x() - p1:x()
+        local dy = p2:y() - p1:y()
+
+        local ticks = #pos_tab * self.update_interval
+        local duration = ticks / 30
+
+        -- m/s vec2
+        local vx = dx / duration
+        local vy = dy / duration
+        return vec2(vx, vy)
+    end
+    return nil
+end
+
+function VehicleHistory:get_last_position()
+    local pos_tab = self.position
+    if #pos_tab then
+        return pos_tab[#pos_tab]
+    end
+    return nil
+end
+
+function VehicleHistory:get_valid()
+    local vel = self:get_velocity()
+    local now = update_get_logic_tick()
+    if now - self.updated < 10 then
+        if vel and vec2_dist(vec2(0, 0), vel) < 500 then
+            return true
+        end
+    end
+    return false
+end
+
+
+function save_vehicle_history(history_tab, vehicle)
+    if vehicle and vehicle:get() then
+        local v_id = vehicle:get_id()
+        local hist = history_tab[v_id]
+        if hist ~= nil then
+            hist:update()
+        else
+            hist = VehicleHistory:new(vehicle)
+            history_tab[v_id] = hist
+        end
+    end
+end
+
+function update_vehicle_histories(history_tab, base_pos, max_range)
+    local range_sq = max_range * max_range
+    local function per_vehicle(vehicle)
+        -- only record sea units for now
+        local v_def = vehicle:get_definition_index()
+        if get_is_vehicle_sea(v_def) then
+            local v_id = vehicle:get_id()
+            -- is it near the base_vehicle
+            local dist_sq = vec2_dist_sq(vehicle:get_position_xz(), base_pos)
+            if dist_sq < range_sq then
+                save_vehicle_history(history_tab, vehicle)
+            else
+                history_tab[v_id] = nil
+            end
+        end
+    end
+    iter_hostile_units(update_get_screen_team_id(), per_vehicle)
+end
+
+function iter_vehicle_histories(hist_tab, func)
+    for v_id, hist in pairs(hist_tab) do
+        if hist ~= nil then
+            func(hist)
+        end
+    end
 end

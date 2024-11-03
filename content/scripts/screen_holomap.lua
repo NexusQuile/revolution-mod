@@ -19,6 +19,8 @@ g_map_x_offset = 0
 g_map_z_offset = 0
 g_map_size_offset = 0
 
+g_torpedo_speed = 50
+
 g_button_mode = 0
 g_is_map_pos_initialised = false
 g_override = false
@@ -75,6 +77,8 @@ holomap_startup_phases = {
 
 g_is_ruler = false
 g_is_ruler_set = false
+g_ruler_toggle = false
+g_is_ruler_last = false
 g_ruler_x = 0
 g_ruler_y = 0
 
@@ -171,6 +175,9 @@ end
 function _update(screen_w, screen_h, ticks)
     g_screen_w = screen_w
     g_screen_h = screen_h
+
+    g_ruler_toggle = g_is_ruler ~= g_is_ruler_last
+    g_is_ruler_last = g_is_ruler
 
     if g_first_update then
         g_first_update = false
@@ -1036,9 +1043,10 @@ function _update(screen_w, screen_h, ticks)
             cy = cy - 10
 
             local dist = vec2_dist(vec2(g_ruler_x, g_ruler_y), vec2(world_x, world_y))
+            plot_torpedo_intercepts(vec2(g_ruler_x, g_ruler_y), vec2(world_x, world_y))
 
             update_ui_image(cx, cy, atlas_icons.map_icon_loop, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("Torpedo Delay: %.0f s", dist/50), 500, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("Torpedo Delay: %.0f s", dist/g_torpedo_speed), 500, 0, text_col, 0)
             cy = cy - 10
 
             if dist < 10000 then
@@ -2554,3 +2562,52 @@ function render_map_scale(screen_w, screen_h)
 end
 
 g_revolution_welcome = "Carrier Command 2 + Revolution Mod"
+
+
+local torpedo_ship_history = {}
+local torpedo_ship_history_last = 0
+
+function plot_torpedo_intercepts(origin, target)
+    if g_ruler_toggle then
+        torpedo_ship_history = {}
+    end
+    local now = update_get_logic_tick()
+    local elapsed = now - torpedo_ship_history_last
+    if elapsed > 10 then
+        torpedo_ship_history_last = now
+        update_vehicle_histories(torpedo_ship_history, target, 40000)
+    end
+    local dist = vec2_dist(origin, target)
+    local travel_time = dist / g_torpedo_speed
+
+    -- find all visible ships 50km within target point
+    iter_vehicle_histories(torpedo_ship_history, function(hist)
+        -- plot projected path in 10 sec increments
+        local start = 0
+        local p1 = hist:get_last_position()
+        if p1 then
+            local v = hist:get_velocity()
+            if v then
+                local interval = 10
+                local x2 = 0
+                local y2 = 0
+                while start < travel_time do
+                    start = start + interval
+                    local p2 = vec2(p1:x() + v:x() * interval, p1:y() + v:y() * interval)
+                    if p2 then
+                        -- plot
+                        local x1
+                        local y1
+                        x1, y1 = get_holomap_from_world( p1:x(), p1:y(), g_screen_w, g_screen_h)
+                        x2, y2 = get_holomap_from_world( p2:x(), p2:y(), g_screen_w, g_screen_h)
+                        if start % 20 == 0 then
+                            update_ui_line(x1, y1, x2, y2, color_enemy)
+                        end
+                        -- update_ui_rectangle_outline(x1 - 2, y1 - 2, 4, 4, color_enemy)
+                    end
+                    p1 = p2
+                end
+            end
+        end
+    end)
+end
