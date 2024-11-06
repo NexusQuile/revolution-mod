@@ -435,7 +435,6 @@ function setup_autoland(vehicle, pos, start_pos)
         local b = math.atan(dy, dx)
         local sy = math.sin(b) * glide_len
         local sx = math.cos(b) * glide_len
-        print(sx, sy)
         start_pos = vec3(pos:x() - sx, pos:y() - sy, 0)
     end
 
