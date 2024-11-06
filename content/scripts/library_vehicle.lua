@@ -426,8 +426,17 @@ function setup_autoland(vehicle, pos, start_pos)
     vehicle:clear_waypoints()
     local steps = 12
     local gnd = 6
+    local glide_len = 350
     if start_pos == nil then
-        start_pos = vec3(pos:x() - 405, pos:y() - 405, 0)
+        start_pos = vec3(pos:x() - glide_len, pos:y() - glide_len, 0)
+    else
+        local dx = pos:x() - start_pos:x()
+        local dy = pos:y() - start_pos:y()
+        local b = math.atan(dy, dx)
+        local sy = math.sin(b) * glide_len
+        local sx = math.cos(b) * glide_len
+        print(sx, sy)
+        start_pos = vec3(pos:x() - sx, pos:y() - sy, 0)
     end
 
     -- set an approach waypoint 550m away
@@ -452,8 +461,10 @@ function setup_autoland(vehicle, pos, start_pos)
     if nearest_gnd_unit and nearest_gnd_unit:get() then
         local ref_pos = nearest_gnd_unit:get_position_xz()
         local ref_rng = vec2_dist(ref_pos, pos)
-        if ref_rng < 150 then
+        if ref_rng < 100 then
             gnd = math.floor(get_unit_altitude(nearest_gnd_unit) - 5.5)
+        else
+            gnd = 0
         end
     end
 
