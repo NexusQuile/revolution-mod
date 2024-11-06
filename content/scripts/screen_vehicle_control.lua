@@ -835,6 +835,12 @@ function render_selection_waypoint(screen_w, screen_h)
                                 waypoint_altitude = before_alt - 5
                             end
                         end
+                        if waypoint_altitude > 2000 then
+                            waypoint_altitude = 2000
+                        elseif waypoint_altitude < 0 then
+                            waypoint_altitude = 0
+                        end
+
                         selected_vehicle:set_waypoint_altitude(g_selection.waypoint_id, waypoint_altitude)
                     end
 
@@ -842,7 +848,10 @@ function render_selection_waypoint(screen_w, screen_h)
                     local inc_val = { -500, -100, 100, 500 }
                     local inc_act = ui:button_group({ "-500", "-100", "+100", "+500" }, true)
                     if inc_act >= 0 and inc_act < #inc_val then
-                        selected_vehicle:set_waypoint_altitude(g_selection.waypoint_id, math.max( 0, math.min( 2000, waypoint_altitude + inc_val[inc_act + 1])))
+                        local new_alt = waypoint_altitude + inc_val[inc_act + 1]
+                        new_alt = math.max(0, new_alt)
+                        new_alt = math.min(2000, new_alt)
+                        selected_vehicle:set_waypoint_altitude(g_selection.waypoint_id, new_alt)
                     end
 
                     -- waypoint altitude presets
