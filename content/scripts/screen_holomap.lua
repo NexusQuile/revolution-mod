@@ -953,6 +953,11 @@ function _update(screen_w, screen_h, ticks)
                 end
 
                 draw_map_radar_state_indicator(vehicle, screen_pos_x, screen_pos_y, g_animation_time)
+                if vehicle_definition_index == e_game_object_type.chassis_carrier then
+                    if screen_vehicle:get_id() == vehicle:get_id() then
+                        draw_surface_radar_circle(vehicle, g_animation_time)
+                    end
+                end
                 
                 -- Waypoint cleanup for the carrier
                 if waypoint_remove > -1 then
@@ -1978,8 +1983,14 @@ function render_dashed_line(x0, y0, x1, y1, col)
     end
 end
 
-function render_weapon_radius(world_pos_x, world_pos_y, radius, screen_w, screen_h, c_color)
+function render_weapon_radius(world_pos_x, world_pos_y, radius, screen_w, screen_h, c_color, b_color, alt_steps, filled)
     local steps = 16
+    if filled == nil then
+        filled = true
+    end
+    if alt_steps ~= nil then
+        steps = alt_steps
+    end
     local step = math.pi * 2 / steps
     local angle_prev = 0
     local screen_pos_x, screen_pos_y = get_holomap_from_world(world_pos_x, world_pos_y, screen_w, screen_h)
@@ -1988,17 +1999,20 @@ function render_weapon_radius(world_pos_x, world_pos_y, radius, screen_w, screen
     if c_color == nil then
         c_color = color8(32, 8, 8, math.floor(32 * (math.sin(g_animation_time * 0.15) * 0.5 + 0.5)))
     end
+    if b_color == nil then
+        b_color = color8(32, 8, 8, 64)
+    end
 
     for i = 1, steps do
         local angle = step * i
         local x0, y0 = get_holomap_from_world(world_pos_x + math.cos(angle_prev) * radius, world_pos_y + math.sin(angle_prev) * radius, screen_w, screen_h)
         local x1, y1 = get_holomap_from_world(world_pos_x + math.cos(angle) * radius, world_pos_y + math.sin(angle) * radius, screen_w, screen_h)
-        local color = color8(32, 8, 8, 64)
+        local color = b_color
 
         update_ui_line(x0, y0, x1, y1, color)
-
-        update_ui_add_triangle(vec2(x0, y0), vec2(x1, y1), vec2(screen_pos_x, screen_pos_y), c_color)
-
+        if filled then
+            update_ui_add_triangle(vec2(x0, y0), vec2(x1, y1), vec2(screen_pos_x, screen_pos_y), c_color)
+        end
         angle_prev = angle
     end
 
@@ -2610,4 +2624,73 @@ function plot_torpedo_intercepts(origin, target)
             end
         end
     end)
+end
+
+function draw_surface_radar_circle(vehicle, anim_time)
+    if vehicle and vehicle:get() then
+        local camera_size = g_map_size + g_map_size_offset
+        local pos = vehicle:get_position_xz()
+        local team = vehicle:get_team()
+        local color = nil
+        local state = get_vehicle_radar_state(vehicle)
+        if state == "on" then
+            color = color8(0, 0, 64, 32)
+        end
+
+        if color ~= nil then
+            render_weapon_radius(
+                    pos:x(),
+                    pos:y(),
+                    10000,
+                    g_screen_w, g_screen_h, nil, color, 32, false)
+        end
+        local detect_range_sq = 16000 * 16000
+        local min_range_sq = 9000 * 9000
+        local v_screen_x, v_screen_y = get_holomap_from_world(pos:x(), pos:y(), g_screen_w, g_screen_h)
+
+        -- draw radar spokes to near-ish radars
+        iter_radars(function(radar)
+            local radar_team = radar:get_team()
+            if radar_team ~= team and get_vehicle_radar_state(radar) == "on" then
+                local radar_pos = radar:get_position_xz()
+                local radar_dist_sq = vec2_dist_sq(pos, radar_pos)
+                local radar_max_dist_sq = detect_range_sq
+                local radar_range_power = get_modded_radar_range(radar)
+                if radar_range_power > 0 then
+                    if not get_is_vehicle_air(radar:get_definition_index()) then
+                        -- surface radar, trim the detection range
+                        radar_range_power = 0.7 * radar_range_power
+                    else
+                        radar_range_power = 1.4 * radar_range_power
+                    end
+                    radar_max_dist_sq = radar_range_power * radar_range_power
+                end
+                if radar_dist_sq < radar_max_dist_sq and get_vehicle_radar_state(radar) == "on" then
+                    local color = color8(64, 8, 0, 32 )
+                    local x, y
+                    if radar_dist_sq > min_range_sq  then
+                        -- target is out of our radar range
+                        local outer_pos = world_clamp_to_direction(pos, radar_pos, 12000)
+                        local inner_pos = world_clamp_to_direction(pos, radar_pos, 10000)
+                        local x1, y1 = get_holomap_from_world(inner_pos:x(), inner_pos:y(), g_screen_w, g_screen_h)
+                        x, y = get_holomap_from_world(outer_pos:x(), outer_pos:y(), g_screen_w, g_screen_h)
+                        -- diamond
+                        update_ui_circle(x1, y1, 4, 4, color8(64, 8, 0, 32))
+                        update_ui_line(x1, y1, x, y, color)
+
+                        --update_ui_circle(x, y, 4, 4, color8(64, 8, 0, 32))
+                    else
+                        x, y = get_holomap_from_world(radar_pos:x(), radar_pos:y(), g_screen_w, g_screen_h)
+                        update_ui_line(v_screen_x, v_screen_y, x, y, color)
+                    end
+
+                    -- distant diamond
+                    update_ui_line(x - 4, y, x, y - 4, color)
+                    update_ui_line(x, y -4, x + 4, y, color)
+                    update_ui_line(x + 4, y, x, y + 4, color)
+                    update_ui_line(x, y + 4, x - 4, y, color)
+                end
+            end
+        end)
+    end
 end

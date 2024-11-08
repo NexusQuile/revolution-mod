@@ -1706,3 +1706,12 @@ function table_append_max(tab, value, max_num)
         table.remove(tab, 1)
     end
 end
+
+function world_clamp_to_direction(origin, target, max_range)
+    local dx = origin:x() - target:x()
+    local dy = origin:y() - target:y()
+    local b = math.atan(dy, dx)
+    local sy = math.sin(b) * max_range
+    local sx = math.cos(b) * max_range
+    return vec2(origin:x() - sx, origin:y() - sy)
+end

@@ -428,14 +428,14 @@ function setup_autoland(vehicle, pos, start_pos)
     local gnd = 6
     local glide_len = 350
     if start_pos == nil then
-        start_pos = vec3(pos:x() - glide_len, pos:y() - glide_len, 0)
+        start_pos = vec2(pos:x() - glide_len, pos:y() - glide_len)
     else
         local dx = pos:x() - start_pos:x()
         local dy = pos:y() - start_pos:y()
         local b = math.atan(dy, dx)
         local sy = math.sin(b) * glide_len
         local sx = math.cos(b) * glide_len
-        start_pos = vec3(pos:x() - sx, pos:y() - sy, 0)
+        start_pos = vec2(pos:x() - sx, pos:y() - sy)
     end
 
     -- set an approach waypoint 550m away
@@ -1142,6 +1142,19 @@ function get_nearest_hostile_aew_radar(vid)
     return nil
 end
 
+function iter_radars(func)
+    if func == nil then
+        return
+    end
+    for i, item in pairs(g_all_radars) do
+        local radar_id = item.id
+        local radar = update_get_map_vehicle_by_id(radar_id)
+        if radar and radar:get() then
+            func(radar)
+        end
+    end
+end
+
 function get_nearest_hostile_radar(vid)
     -- used by HUD RWR
     local rwr_vehicle = update_get_map_vehicle_by_id(vid)
@@ -1158,11 +1171,8 @@ function get_nearest_hostile_radar(vid)
         local dist_sq = 19000 * 19000
         local nearest = nil
 
-        for i, item in pairs(g_all_radars) do
-            local radar_id = item.id
-            local radar = update_get_map_vehicle_by_id(radar_id)
-            if radar and radar:get() then
-                local radar_team = get_vehicle_team_id(radar)
+        iter_radars(function(radar)
+            local radar_team = get_vehicle_team_id(radar)
                 if radar_team ~= rwr_team then
                     -- hostile, calc dist
                     local d = dist_sq
@@ -1176,8 +1186,8 @@ function get_nearest_hostile_radar(vid)
                         nearest = radar
                     end
                 end
-            end
-        end
+        end)
+
         if nearest and dist_sq < (18000 * 18000) then
             return nearest, math.sqrt(dist_sq)
         end
