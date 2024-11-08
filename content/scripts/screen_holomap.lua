@@ -953,10 +953,8 @@ function _update(screen_w, screen_h, ticks)
                 end
 
                 draw_map_radar_state_indicator(vehicle, screen_pos_x, screen_pos_y, g_animation_time)
-                if vehicle_definition_index == e_game_object_type.chassis_carrier then
-                    if screen_vehicle:get_id() == vehicle:get_id() then
-                        draw_surface_radar_circle(vehicle, g_animation_time)
-                    end
+                if vehicle_definition_index == e_game_object_type.chassis_carrier or get_is_vehicle_land(vehicle_definition_index) then
+                    draw_surface_radar_circle(vehicle, g_animation_time)
                 end
                 
                 -- Waypoint cleanup for the carrier
@@ -2628,13 +2626,18 @@ end
 
 function draw_surface_radar_circle(vehicle, anim_time)
     if vehicle and vehicle:get() then
-        local camera_size = g_map_size + g_map_size_offset
         local pos = vehicle:get_position_xz()
         local team = vehicle:get_team()
         local color = nil
         local state = get_vehicle_radar_state(vehicle)
         if state == "on" then
             color = color8(0, 0, 64, 32)
+            local screen_vehicle = update_get_screen_vehicle()
+            if screen_vehicle and screen_vehicle:get() then
+                if screen_vehicle:get_id() == vehicle:get_id() then
+                    color = color8(0, 0, 64, 64)
+                end
+            end
         end
 
         if color ~= nil then
@@ -2647,6 +2650,10 @@ function draw_surface_radar_circle(vehicle, anim_time)
         local detect_range_sq = 16000 * 16000
         local min_range_sq = 10000 * 10000
         local v_screen_x, v_screen_y = get_holomap_from_world(pos:x(), pos:y(), g_screen_w, g_screen_h)
+
+        if state ~= "on" then
+            return
+        end
 
         -- draw radar spokes to near-ish radars
         iter_radars(function(radar)
