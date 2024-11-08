@@ -2645,7 +2645,7 @@ function draw_surface_radar_circle(vehicle, anim_time)
                     g_screen_w, g_screen_h, nil, color, 32, false)
         end
         local detect_range_sq = 16000 * 16000
-        local min_range_sq = 9000 * 9000
+        local min_range_sq = 10000 * 10000
         local v_screen_x, v_screen_y = get_holomap_from_world(pos:x(), pos:y(), g_screen_w, g_screen_h)
 
         -- draw radar spokes to near-ish radars
