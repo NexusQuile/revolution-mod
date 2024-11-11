@@ -2808,7 +2808,7 @@ function get_loadout_attachment_not_allowed(vehicle, attachment_index)
         local a_def = attachment:get_definition_index()
         if a_def then
             for _, item in pairs(options) do
-                if item.type == a_def then
+                if item.type == a_def or (-1 * item.type == a_def) then
                     return false
                 end
             end

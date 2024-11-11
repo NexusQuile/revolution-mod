@@ -4103,3 +4103,48 @@ function render_barge_cargo_tooltip(vehicle, cx, cy, color)
 
     return cy
 end
+
+
+function rev_custom_button(ui, label, x, y, w, h, enabled, func)
+    local window = ui:begin_window("", x, y, w, h, nil, enabled, 1)
+    local text = ""
+    if label ~= nil then
+        text = label
+    end
+
+    if ui:button(text, true, 1) then
+        if func ~= nil then
+            func()
+        end
+    end
+
+    ui:end_window()
+    return y + h
+end
+
+function call_custom_vehicle_input_event(event, action)
+    if custom_vehicle_input_event ~= nil then
+        local st, err = pcall(custom_vehicle_input_event, event, action)
+        if not st then
+            print(err)
+        end
+    end
+end
+
+function call_custom_vehicle_loadout_update(screen_w, screen_h, ticks)
+    if custom_vehicle_loadout_update ~= nil then
+        local st, v = pcall(custom_vehicle_loadout_update, screen_w, screen_h, ticks)
+        if st then
+            return v
+        else
+            print(v)
+        end
+    end
+    return false
+end
+
+function call_custom_ui_vehicle_loadout_chassis(ui, vehicle)
+    if custom_ui_vehicle_loadout_chassis ~= nil then
+        custom_ui_vehicle_loadout_chassis(ui, vehicle)
+    end
+end

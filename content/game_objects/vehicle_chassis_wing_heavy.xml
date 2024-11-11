@@ -129,6 +129,13 @@
 		<attachment name="right_2" type="3">
 			<transform m00="1.00000000e+00" m01="0.00000000e+00" m02="0.00000000e+00" m10="0.00000000e+00" m11="1.00000000e+00" m12="0.00000000e+00" m20="0.00000000e+00" m21="0.00000000e+00" m22="1.00000000e+00" tx="2.97799993e+00" ty="-1.10000002e+00" tz="-8.61999989e-01"/>
 		</attachment>
+		<!-- eg, top mounted obs camera -->
+		<attachment name="top" type="1">
+			<transform m00="1.00000000e+00" m01="0.00000000e+00" m02="0.00000000e+00"
+					   m10="0.00000000e+00" m11="1.00000000e+00" m12="0.00000000e+00"
+					   m20="0.00000000e+00" m21="0.00000000e+00" m22="1.00000000e+00"
+					   tx="0.00000000e+00" ty="0" tz="-1.8"/>
+		</attachment>
 	</attachments>
 	<force_emitters>
 		<force_emitter name="main_engine" magnitude="1.00000000e+02">
