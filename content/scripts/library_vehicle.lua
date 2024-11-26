@@ -3494,9 +3494,10 @@ function update_vehicle_histories(history_tab, base_pos, max_range)
         local v_def = vehicle:get_definition_index()
         if get_is_vehicle_sea(v_def) then
             local v_id = vehicle:get_id()
-            -- is it near the base_vehicle
+            -- is it near the base_vehicle and is visible
+
             local dist_sq = vec2_dist_sq(vehicle:get_position_xz(), base_pos)
-            if dist_sq < range_sq then
+            if vehicle:get_is_visible() and dist_sq < range_sq then
                 save_vehicle_history(history_tab, vehicle)
             else
                 history_tab[v_id] = nil
