@@ -953,8 +953,13 @@ function _update(screen_w, screen_h, ticks)
                 end
 
                 draw_map_radar_state_indicator(vehicle, screen_pos_x, screen_pos_y, g_animation_time)
-                if vehicle_definition_index == e_game_object_type.chassis_carrier or get_is_vehicle_land(vehicle_definition_index) then
-                    draw_surface_radar_circle(vehicle, g_animation_time)
+                if vehicle_definition_index == e_game_object_type.chassis_carrier
+                    or vehicle_definition_index == e_game_object_type.chassis_sea_ship_light
+                    or vehicle_definition_index == e_game_object_type.chassis_sea_ship_heavy
+                    or get_is_vehicle_land(vehicle_definition_index) then
+                    if not get_vehicle_docked(vehicle) then
+                        draw_surface_radar_circle(vehicle, g_animation_time)
+                    end
                 end
                 
                 -- Waypoint cleanup for the carrier
@@ -2640,38 +2645,43 @@ function draw_surface_radar_circle(vehicle, anim_time)
             end
         end
 
-        if color ~= nil then
+        local radar_attachment = _get_radar_attachment(vehicle)
+        local radar_range = _get_radar_detection_range(radar_attachment)
+
+        if state == "on" and radar_range > 0 and color ~= nil then
             render_weapon_radius(
                     pos:x(),
                     pos:y(),
-                    10000,
+                    radar_range,
                     g_screen_w, g_screen_h, nil, color, 32, false)
         end
-        local detect_range_sq = 16000 * 16000
-        local min_range_sq = 10000 * 10000
-        local v_screen_x, v_screen_y = get_holomap_from_world(pos:x(), pos:y(), g_screen_w, g_screen_h)
 
-        if state ~= "on" then
-            return
-        end
+        -- max range this unit can detect other radars
+        local detect_range_sq = 1.6 * radar_range * 1.6 * radar_range
+        -- range where nearby radars are 100% visible
+        local min_range_sq = 0.9 * radar_range * 0.9 * radar_range
+
+        local v_screen_x, v_screen_y = get_holomap_from_world(pos:x(), pos:y(), g_screen_w, g_screen_h)
 
         -- draw radar spokes to near-ish radars
         iter_radars(function(radar)
             local radar_team = radar:get_team()
             if radar_team ~= team and get_vehicle_radar_state(radar) == "on" then
                 local radar_pos = radar:get_position_xz()
+                -- distance to this radar
                 local radar_dist_sq = vec2_dist_sq(pos, radar_pos)
                 local radar_max_dist_sq = detect_range_sq
                 local radar_range_power = get_modded_radar_range(radar)
-                if radar_range_power > 0 then
-                    if not get_is_vehicle_air(radar:get_definition_index()) then
-                        -- surface radar, trim the detection range
-                        radar_range_power = 0.7 * radar_range_power
-                    else
-                        radar_range_power = 1.4 * radar_range_power
-                    end
-                    radar_max_dist_sq = radar_range_power * radar_range_power
-                end
+                --if radar_range_power > 0 then
+                --    if not get_is_vehicle_air(radar:get_definition_index()) then
+                --        -- surface radar, trim the detection range
+                --        radar_range_power = 0.9 * radar_range_power
+                --    else
+                --        radar_range_power = 1.4 * radar_range_power
+                --    end
+                --    radar_max_dist_sq = radar_range_power * radar_range_power
+                --end
+
                 if radar_dist_sq < radar_max_dist_sq and get_vehicle_radar_state(radar) == "on" then
                     local color = color8(64, 8, 0, 32 )
                     local x, y
@@ -2681,21 +2691,23 @@ function draw_surface_radar_circle(vehicle, anim_time)
                         local inner_pos = world_clamp_to_direction(pos, radar_pos, 10000)
                         local x1, y1 = get_holomap_from_world(inner_pos:x(), inner_pos:y(), g_screen_w, g_screen_h)
                         x, y = get_holomap_from_world(outer_pos:x(), outer_pos:y(), g_screen_w, g_screen_h)
-                        -- diamond
-                        update_ui_circle(x1, y1, 4, 4, color8(64, 8, 0, 32))
-                        update_ui_line(x1, y1, x, y, color)
+                        -- target spoke
 
+                        -- update_ui_circle(x1, y1, 4, 4, color8(64, 8, 0, 32))
+                        -- update_ui_line(x1, y1, x, y, color)
+                        draw_faded_line(v_screen_x, v_screen_y, x, y, color, 10)
                         --update_ui_circle(x, y, 4, 4, color8(64, 8, 0, 32))
                     else
                         x, y = get_holomap_from_world(radar_pos:x(), radar_pos:y(), g_screen_w, g_screen_h)
-                        update_ui_line(v_screen_x, v_screen_y, x, y, color)
-                    end
 
-                    -- distant diamond
-                    update_ui_line(x - 4, y, x, y - 4, color)
-                    update_ui_line(x, y -4, x + 4, y, color)
-                    update_ui_line(x + 4, y, x, y + 4, color)
-                    update_ui_line(x, y + 4, x - 4, y, color)
+                        update_ui_line(v_screen_x, v_screen_y, x, y, color)
+
+                        --  diamond
+                        update_ui_line(x - 4, y, x, y - 4, color)
+                        update_ui_line(x, y -4, x + 4, y, color)
+                        update_ui_line(x + 4, y, x, y + 4, color)
+                        update_ui_line(x, y + 4, x - 4, y, color)
+                    end
                 end
             end
         end)

@@ -831,6 +831,8 @@ g_radar_ranges = {
     torpedo = 8000,
     cruise_missile = 9000,
     naval_gun = 4500,
+    golfball = 10000,
+    awacs = 10000,
 }
 
 g_radar_last_sea_scan = 0

@@ -1715,3 +1715,19 @@ function world_clamp_to_direction(origin, target, max_range)
     local sx = math.cos(b) * max_range
     return vec2(origin:x() - sx, origin:y() - sy)
 end
+
+function draw_faded_line(x1, y1, x2, y2, color, steps)
+    local alpha = color:a()
+    local dx = x1 - x2
+    local sx = dx / steps
+    local dy = y1 - y2
+    local sy = dy / steps
+    local alpha_step = alpha / steps
+    local x = x1
+    local y = y1
+    for i=1, steps do
+        update_ui_line(x, y, x - sx, y - sy, color8(color:r(), color:g(), color:b(), math.floor(alpha - alpha_step * i)))
+        x = x - sx
+        y = y - sy
+    end
+end
