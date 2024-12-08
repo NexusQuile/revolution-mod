@@ -170,8 +170,24 @@ function real_update(screen_w, screen_h, tick_fraction, delta_time, local_peer_i
     g_is_render_hp = true
     g_is_render_control_mode = true
     g_is_render_compass = true
+
     g_map_toggle = g_is_map_overlay ~= g_last_map_overlay
     g_last_map_overlay = g_is_map_overlay
+    if g_map_toggle then
+        -- detect double taps
+        local now = update_get_logic_tick()
+        local diff = now - g_camera_toggle_last_tick
+        g_camera_toggle_last_tick = now
+        if diff < 10 then
+            g_camera_clear = not g_camera_clear
+            update_set_screen_background_type(0)
+        end
+    end
+
+    if g_camera_clear and get_is_spectator_mode() then
+        -- render no hud
+        return
+    end
 
     if vehicle:get() == nil or g_is_connected == false then
         update_add_ui_interaction(update_get_loc(e_loc.interaction_cancel), e_game_input.back)
@@ -422,6 +438,10 @@ end
 
 g_radar_mode = 0
 g_camera_mode = 0
+
+g_camera_clear = false
+g_camera_toggle_last_tick = 0
+
 g_last_map_overlay = false
 g_map_toggle = false
 
