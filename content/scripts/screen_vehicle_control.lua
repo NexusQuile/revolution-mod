@@ -419,7 +419,7 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
             local title = vehicle_definition_name .. string.format( " ID %.0f", vehicle:get_id() )
             local is_window_active = g_selected_vehicle_ui.confirm_self_destruct == false
 
-            ui:begin_window(title, 10, 10, left_w, 101, atlas_icons.column_pending, is_window_active, 2)
+            ui:begin_window(title, 10, 10, left_w, 104, atlas_icons.column_pending, is_window_active, 2)
                 ui:stat(update_get_loc(e_loc.hp), hitpoints .. "/" .. hitpoints_total, iff(damage_factor < 0.2, color_low, color_high))
 
                 if vehicle_definition_index == e_game_object_type.chassis_land_turret then
@@ -431,7 +431,15 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
                 end
 
                 ui:header(update_get_loc(e_loc.upp_actions))
-                
+
+                if not update_get_is_multiplayer() then
+                    if vehicle_definition_index ~= e_game_object_type.chassis_carrier and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge and def_index ~= e_game_object_type.chassis_land_robot_dog then
+                        local is_vehicle_hold_fire = vehicle:get_is_hold_fire()
+                        local is_hold_fire, is_modified = ui:checkbox(update_get_loc(e_loc.hold_fire), is_vehicle_hold_fire)
+                        if is_modified then vehicle:set_is_hold_fire(is_hold_fire) end
+                    end
+                end
+
                 if ui:list_item(update_get_loc(e_loc.upp_center_to_vehicle), true) then
                     g_camera_pos_x = vehicle:get_position_xz():x()
                     g_camera_pos_y = vehicle:get_position_xz():y()
@@ -505,7 +513,7 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
                     end
 
                 end
-                
+
                 local dock_state = vehicle:get_dock_state()
                 local is_self_destruct = dock_state == e_vehicle_dock_state.undocked or dock_state == e_vehicle_dock_state.dock_queue or dock_state == e_vehicle_dock_state.docking
                 is_self_destruct = is_self_destruct and vehicle:get_team() == screen_vehicle:get_team()
@@ -513,7 +521,7 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
                     g_selected_vehicle_ui.confirm_self_destruct = true
                 end
             ui:end_window()
-            
+
             local attachment_count = vehicle:get_attachment_count()
             local attachments = {}
 
@@ -754,7 +762,7 @@ function render_selection_command_center(screen_w, screen_h, selected_island)
             end
         end
     end
-    
+
     render_currency_display(screen_w - 20, 10, true)
 end
 
@@ -764,7 +772,7 @@ function undock_by_bay_index(carrier_vehicle, bay_index)
     if child_vehicle_id >= 0 then
         g_selected_child_vehicle_id = child_vehicle_id
     end
-    
+
     g_selection:clear()
     g_screen_index = 0
 end
@@ -782,7 +790,7 @@ function render_selection_waypoint(screen_w, screen_h)
         if selected_waypoint:get() then
             local ui = g_ui
             local attack_type = -1
-        
+
             local is_group_a = selected_waypoint:get_is_wait_group(0)
             local is_group_b = selected_waypoint:get_is_wait_group(1)
             local is_group_c = selected_waypoint:get_is_wait_group(2)
@@ -795,7 +803,7 @@ function render_selection_waypoint(screen_w, screen_h)
                 window.label_bias = 0.8
 
                 ui:header(update_get_loc(e_loc.upp_wait_group))
-        
+
                 is_group_a, is_modified = ui:checkbox(update_get_loc(e_loc.upp_wait_alpha), is_group_a)
                 if is_modified then selected_vehicle:set_waypoint_wait_group(g_selection.waypoint_id, 0, is_group_a) end
 
@@ -807,7 +815,7 @@ function render_selection_waypoint(screen_w, screen_h)
 
                 is_group_d, is_modified = ui:checkbox(update_get_loc(e_loc.upp_wait_delta), is_group_d)
                 if is_modified then selected_vehicle:set_waypoint_wait_group(g_selection.waypoint_id, 3, is_group_d) end
-                
+
                 local vehicle_definition_index = selected_vehicle:get_definition_index()
                 local is_robot_dog_deploy = get_is_vehicle_robot_dog_deploy_available(selected_vehicle)
                 local is_droid_deploy = get_is_vehicle_droid_deploy_available(selected_vehicle)
@@ -818,7 +826,7 @@ function render_selection_waypoint(screen_w, screen_h)
                     is_deploy, is_modified = ui:checkbox(update_get_loc(e_loc.upp_deploy_vehicle), is_deploy)
                     if is_modified then selected_vehicle:set_waypoint_type_deploy(g_selection.waypoint_id, is_deploy) end
                 end
-                
+
                 window.label_bias = 0.5
 
                 if get_is_vehicle_air(vehicle_definition_index) then
@@ -888,7 +896,7 @@ end
 
 function render_selection_attack_target(screen_w, screen_h)
     update_ui_rectangle(0, 0, 256, 256, color8(0, 0, 0, 128))
-    
+
     local ui = g_ui
     local attack_type = -1
 
@@ -899,7 +907,7 @@ function render_selection_attack_target(screen_w, screen_h)
 
     if selected_vehicle:get() and attack_target_vehicle:get() then
         ui:begin_window(update_get_loc(e_loc.upp_attack_target), 64, 64, screen_w - 128, screen_h - 128, atlas_icons.column_laser, true, 2)
-        
+
         local is_air = get_is_vehicle_air(attack_target_vehicle:get_definition_index())
         local is_land = get_is_vehicle_land(attack_target_vehicle:get_definition_index())
         local is_sea = get_is_vehicle_sea(attack_target_vehicle:get_definition_index())
@@ -929,7 +937,7 @@ function render_selection_attack_target(screen_w, screen_h)
             if is_attack_type_order_main_gun_capable and ui:list_item(update_get_loc(e_loc.upp_attack_type_main_gun), true) then attack_type = e_attack_type.order_main_gun end
             if is_attack_type_order_cruise_missile_capable and ui:list_item(update_get_loc(e_loc.upp_attack_type_cruise_missile), true) then attack_type = e_attack_type.order_cruise_missile end
         end
-        
+
         ui:end_window()
 
         if attack_type ~= -1 then
@@ -943,7 +951,7 @@ function render_selection_attack_target(screen_w, screen_h)
             end
 
             local selected_waypoint = selected_vehicle:get_waypoint_by_id(g_selection.waypoint_id)
-            
+
             if selected_waypoint:get() then
                 local attack_target_index = selected_waypoint:get_attack_target_count()
                 selected_vehicle:set_waypoint_attack_target_target_id(g_selection.waypoint_id, g_selection.attack_target_vehicle_id)
@@ -961,7 +969,7 @@ end
 
 function render_selection_map(screen_w, screen_h)
     update_ui_rectangle(0, 0, 256, 256, color8(0, 0, 0, 128))
-    
+
     local ui = g_ui
 
     update_add_ui_interaction_special(update_get_loc(e_loc.interaction_navigate), e_ui_interaction_special.gamepad_dpad_ud)
@@ -975,7 +983,7 @@ function render_selection_map(screen_w, screen_h)
             window.scroll_y = g_map_window_scroll
         end
 
-        window.label_bias = 0.8    
+        window.label_bias = 0.8
 
         ui:header(update_get_loc(e_loc.upp_actions))
 
@@ -985,7 +993,7 @@ function render_selection_map(screen_w, screen_h)
         end
 
         ui:header(update_get_loc(e_loc.upp_orders))
-        
+
         if ui:list_item(update_get_loc(e_loc.upp_alpha_go), true) then
             update_set_go_code(0)
             g_go_code = 0
@@ -1018,7 +1026,7 @@ function render_selection_map(screen_w, screen_h)
         end
 
         ui:header(update_get_loc(e_loc.upp_map_mode))
-        
+
         if ui:checkbox(update_get_loc(e_loc.upp_cartographic), g_map_render_mode == 1, true) then g_map_render_mode = 1 end
         if ui:checkbox(update_get_loc(e_loc.upp_wind), g_map_render_mode == 2, true) then g_map_render_mode = 2 end
         if ui:checkbox(update_get_loc(e_loc.upp_precipitation), g_map_render_mode == 3, true) then g_map_render_mode = 3 end
@@ -1052,7 +1060,7 @@ function render_selection(screen_w, screen_h)
 
         if selected_vehicle:get() then
             local vehicle_definition_index = selected_vehicle:get_definition_index()
-        
+
             if vehicle_definition_index == 0 then -- carrier
                 render_selection_carrier(screen_w, screen_h, selected_vehicle)
             elseif selected_vehicle:get_team() == update_get_screen_team_id() or get_is_spectator_mode() then
@@ -1127,7 +1135,7 @@ function parse()
     g_is_vehicle_team_colors = parse_bool("is_vehicle_team_colors", g_is_vehicle_team_colors)
     g_viewing_vehicle_id = parse_s32("", g_viewing_vehicle_id)
     g_is_island_team_colors = parse_bool("is_island_team_colors", g_is_island_team_colors)
-    
+
     -- End of original parse calls
 
     g_is_carrier_waypoint = parse_bool("is_show_carrier_waypoints", g_is_carrier_waypoint)
@@ -1182,11 +1190,12 @@ function _update(screen_w, screen_h, ticks)
     end
 
     local screen_vehicle = update_get_screen_vehicle()
+    local screen_team = update_get_screen_team_id()
     g_screen_vehicle_pos = screen_vehicle:get_position_xz()
 
     if g_is_camera_pos_initialised == false and screen_vehicle:get() then
         g_is_camera_pos_initialised = true
-        
+
         local position_xz = screen_vehicle:get_position_xz()
         g_camera_pos_x = position_xz:x()
         g_camera_pos_y = position_xz:y()
@@ -1197,8 +1206,8 @@ function _update(screen_w, screen_h, ticks)
     update_set_screen_vehicle_control_id(g_viewing_vehicle_id)
 
     g_blink_timer = g_blink_timer + ticks
-    if g_blink_timer > 30 then 
-        g_blink_timer = 0 
+    if g_blink_timer > 30 then
+        g_blink_timer = 0
     end
 
     if update_get_is_focus_local() then
@@ -1309,7 +1318,7 @@ function _update(screen_w, screen_h, ticks)
                                 end
                             end
 
-                            if island:get_team_control() == update_get_screen_team_id() then
+                            if island:get_team_control() == screen_team then
                                 local production_count = island:get_facility_production_queue_defense_count()
 
                                 for j = 0, production_count - 1, 1 do
@@ -1360,7 +1369,7 @@ function _update(screen_w, screen_h, ticks)
                                 end
                             end
 
-                            if vehicle_team == update_get_screen_team_id() then
+                            if vehicle_team == screen_team and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge then
                                 local waypoint_count = vehicle:get_waypoint_count()
 
                                 if g_drag.vehicle_id == 0 or g_drag.vehicle_id == vehicle:get_id() then
@@ -1506,7 +1515,7 @@ function _update(screen_w, screen_h, ticks)
                             update_ui_text_mini(screen_pos_x - 64, screen_pos_y - 8, island_name, 128, 1, island_color, 0)
                         end
 
-                        if island:get_team_control() == update_get_screen_team_id() then
+                        if island:get_team_control() == screen_team then
                             if is_placing_turret == false then
                                 local production_count = island:get_facility_production_queue_defense_count()
 
@@ -1514,7 +1523,7 @@ function _update(screen_w, screen_h, ticks)
                                     local item_type, marker_index = island:get_facility_production_queue_defense_item(j)
                                     local turret_spawn_xz = island:get_marker_position(marker_index)
                                     local screen_pos_x, screen_pos_y = get_screen_from_world(turret_spawn_xz:x(), turret_spawn_xz:y(), g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
-                                    local team_color = get_vehicle_team_color(update_get_screen_team_id())
+                                    local team_color = get_vehicle_team_color(screen_team)
                                     local color = iff(j == 0, iff(g_blink_timer > 15, team_color, color_grey_dark), color_grey_dark)
 
                                     if g_highlighted.island_id == island_id and g_highlighted.production_index == j then
@@ -1633,7 +1642,7 @@ function _update(screen_w, screen_h, ticks)
             local weapon_radius_vehicle = update_get_map_vehicle_by_id(g_drag.vehicle_id)
 
             if weapon_radius_vehicle:get() then
-                if weapon_radius_vehicle:get_team() == update_get_screen_team_id() or get_is_spectator_mode() then
+                if weapon_radius_vehicle:get_team() == screen_team or get_is_spectator_mode() then
                     local weapon_range, weapon_range_col = get_vehicle_weapon_range(weapon_radius_vehicle)
                     local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, 256, 256)
 
@@ -1644,9 +1653,21 @@ function _update(screen_w, screen_h, ticks)
                     local def = weapon_radius_vehicle:get_definition_index()
 
                     if def == e_game_object_type.chassis_sea_ship_light or def == e_game_object_type.chassis_sea_ship_heavy then
-                        local team_carrier = screen_vehicle
-                        local vehicle_pos_xz = team_carrier:get_position_xz()
-                        render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
+                        local vehicle_count = update_get_map_vehicle_count()
+
+                        for i = 0, vehicle_count - 1, 1 do
+                            local vehicle = update_get_map_vehicle_by_index(i)
+
+                            if vehicle:get() then
+                                local vehicle_definition_index = vehicle:get_definition_index()
+
+                                if vehicle:get_definition_index() == e_game_object_type.chassis_carrier and vehicle:get_team() == screen_team then
+                                    local vehicle_pos_xz = vehicle:get_position_xz()
+
+                                    render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
+                                end
+                            end
+                        end
                     end
                 end
             end
@@ -1681,7 +1702,7 @@ function _update(screen_w, screen_h, ticks)
 
 
                 if def ~= e_game_object_type.chassis_carrier then
-                    if weapon_radius_vehicle:get_team() == update_get_screen_team_id() or weapon_radius_vehicle:get_is_observation_weapon_revealed() then
+                    if weapon_radius_vehicle:get_team() == screen_team or weapon_radius_vehicle:get_is_observation_weapon_revealed() then
                         local weapon_range, weapon_range_col = get_vehicle_weapon_range(weapon_radius_vehicle)
                         if weapon_range > 0 then
                             local vehicle_pos_xz = weapon_radius_vehicle:get_position_xz()
@@ -1689,11 +1710,23 @@ function _update(screen_w, screen_h, ticks)
                         end
                     end
 
-                    if weapon_radius_vehicle:get_team() == update_get_screen_team_id() then
+                    if weapon_radius_vehicle:get_team() == screen_team then
                         if def == e_game_object_type.chassis_sea_ship_light or def == e_game_object_type.chassis_sea_ship_heavy then
-                            local team_carrier = screen_vehicle
-                            local vehicle_pos_xz = team_carrier:get_position_xz()
-                            render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
+                            local vehicle_count = update_get_map_vehicle_count()
+
+                            for i = 0, vehicle_count - 1, 1 do
+                                local vehicle = update_get_map_vehicle_by_index(i)
+
+                                if vehicle:get() then
+                                    local vehicle_definition_index = vehicle:get_definition_index()
+
+                                    if vehicle:get_definition_index() == e_game_object_type.chassis_carrier and vehicle:get_team() == screen_team then
+                                        local vehicle_pos_xz = vehicle:get_position_xz()
+
+                                        render_weapon_radius(vehicle_pos_xz:x(), vehicle_pos_xz:y(), 500, color8(0, 255, 128, 8))
+                                    end
+                                end
+                            end
                         end
                     end
                 end
@@ -1907,7 +1940,7 @@ function _update(screen_w, screen_h, ticks)
                                 show_waypoints = g_is_carrier_waypoint
                             end
 
-                            if (vehicle_team == update_get_screen_team_id() or get_is_spectator_mode()) and show_waypoints then
+                            if (vehicle_team == screen_team or get_is_spectator_mode()) and show_waypoints then
                                 local waypoint_color = g_color_waypoint
 
                                 if g_highlighted.vehicle_id == vehicle:get_id() and g_highlighted.waypoint_id == 0 then
@@ -2169,6 +2202,7 @@ function _update(screen_w, screen_h, ticks)
 
                             if is_render_vehicle_icon then
                                 -- render vehicle icon
+
                                 local region_vehicle_icon, icon_offset = get_icon_data_by_definition_index(vehicle_definition_index)
 
                                 local element_color = get_vehicle_team_color(vehicle_team)
@@ -2243,7 +2277,7 @@ function _update(screen_w, screen_h, ticks)
                                     cy = cy + 2
                                 end
 
-                                if (get_is_spectator_mode() or vehicle_team == update_get_screen_team_id()) and vehicle_definition_index ~= e_game_object_type.chassis_land_robot_dog then
+                                if (get_is_spectator_mode() or vehicle_team == screen_team) and vehicle_definition_index ~= e_game_object_type.chassis_land_robot_dog then
                                     cx = screen_pos_x - 4
 
                                     local is_visible_by_enemy = vehicle:get_is_visible_by_enemy()
@@ -2288,9 +2322,14 @@ function _update(screen_w, screen_h, ticks)
                                         update_ui_image(cx, cy, atlas_icons.map_icon_low_ammo, icon_color, 0)
                                         cx = cx + 4
                                     end
+
+                                    if vehicle:get_is_hold_fire() == true then
+                                        update_ui_image(cx, cy, atlas_icons.map_icon_hold_fire, color8(255, 0, 0, 255), 0)
+                                        cx = cx + 4
+                                    end
                                 end
 
-                                if vehicle_team == update_get_screen_team_id() then
+                                if vehicle_team == screen_team then
                                     if vehicle:get_controlling_peer_id() ~= 0 then
                                         update_ui_image(screen_pos_x - icon_offset, screen_pos_y - icon_offset, atlas_icons.map_icon_vehicle_control, element_color, 0)
                                     end
@@ -2632,7 +2671,7 @@ function _update(screen_w, screen_h, ticks)
                     else
                         text_x = 8
                     end
-                    if highlighted_island:get_team_control() == update_get_screen_team_id() then
+                    if highlighted_island:get_team_control() == screen_team then
                         update_ui_text(text_x, 4, text, w, 0, color_white, 0)
                     else
                         update_ui_text(text_x, 4, text, w, 0, color_grey_dark, 0)
@@ -3094,7 +3133,7 @@ end
 
 function update_cursor_state(screen_w, screen_h)
     if update_get_is_focus_local() == false then return end
-    
+
     if update_get_active_input_type() == e_active_input.keyboard then
         g_cursor_pos_x = g_pointer_pos_x
         g_cursor_pos_y = g_pointer_pos_y
@@ -3144,7 +3183,7 @@ function input_event(event, action)
 
                         local world_x, world_y = get_world_from_screen(g_cursor_pos_x, g_cursor_pos_y, g_camera_pos_x, g_camera_pos_y, g_camera_size, g_screen_w, g_screen_h)
                         local child_vehicle = update_get_map_vehicle_by_id(g_selected_child_vehicle_id)
-                        
+
                         if child_vehicle:get() and get_is_vehicle_waypoint_available(child_vehicle) then
                             child_vehicle:clear_waypoints()
                             child_vehicle:clear_attack_target()
@@ -3191,7 +3230,7 @@ function input_event(event, action)
                 elseif event == e_input.action_b then
                     if g_highlighted.vehicle_id > 0 and g_highlighted.waypoint_id == 0 then
                         local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted.vehicle_id)
-                            
+
                         if highlighted_vehicle:get() ~= nil and get_is_vehicle_enterable(highlighted_vehicle) then
                             g_viewing_vehicle_id = highlighted_vehicle:get_id()
                             g_screen_index = 1
@@ -3206,7 +3245,7 @@ function input_event(event, action)
                         update_set_screen_state_exit()
                     end
                 end
-            else 
+            else
                 if event == e_input.action_a or event == e_input.pointer_1 then
 
                     if event == e_input.pointer_1 then
@@ -3251,7 +3290,7 @@ function input_event(event, action)
                                 -- drag
 
                                 if g_highlighted.vehicle_id == g_drag.vehicle_id and g_highlighted.waypoint_id > 0 and g_highlighted.waypoint_id ~= g_drag.waypoint_id then
-                                    drag_vehicle:set_waypoint_repeat(g_drag.waypoint_id, g_highlighted.waypoint_id)                 
+                                    drag_vehicle:set_waypoint_repeat(g_drag.waypoint_id, g_highlighted.waypoint_id)
                                 elseif g_highlighted.vehicle_id > 0 then
                                     local highlighted_vehicle = update_get_map_vehicle_by_id(g_highlighted.vehicle_id)
 
@@ -3276,7 +3315,7 @@ function input_event(event, action)
                                                         break
                                                     end
                                                 end
-                                                
+
                                                 if is_highlighted_vehicle_found == false then
                                                     if vehicle_can_airlift(drag_vehicle) then
                                                         local highlighted_vehicle_id = highlighted_vehicle:get_id()
@@ -3320,7 +3359,7 @@ function input_event(event, action)
                                         else
                                             -- toggle attack target on enemy vehicle
 
-                                            if g_drag.waypoint_id > 0 then 
+                                            if g_drag.waypoint_id > 0 then
                                                 local is_highlighted_vehicle_found = false
                                                 local drag_waypoint = drag_vehicle:get_waypoint_by_id(g_drag.waypoint_id)
                                                 local attack_target_count = drag_waypoint:get_attack_target_count()
@@ -3372,7 +3411,7 @@ function input_event(event, action)
                             end
                         end
                     end
-    
+
                     g_drag:clear()
                 end
             end
@@ -3405,7 +3444,7 @@ function input_scroll(dy)
     if g_is_pointer_hovered then
         input_zoom_camera(1 - dy * 0.15, g_screen_w, g_screen_h)
     end
-    
+
     if g_selection:is_selection() then
         g_ui:input_scroll(dy)
     end
@@ -3432,7 +3471,7 @@ function render_map_scale(screen_w, screen_h)
         local dx = ex - sx
 
         local inbound = true
-        
+
         if dx > 175 then
             dx = 175
             inbound = false
@@ -3447,9 +3486,9 @@ function render_map_scale(screen_w, screen_h)
             update_ui_rectangle(-dx/2, 0, 1, 4, color_grey_dark)
             update_ui_rectangle(dx/2 - 1, 0, 1, 4, color_grey_dark)
         end
-        
+
         update_ui_rectangle(0, 2, 1, 2, color_grey_dark)
-        
+
         update_ui_rectangle(-dx/2, 4, dx, 1, color_grey_dark)
 
         update_ui_pop_offset()
@@ -3737,7 +3776,7 @@ end
 
 function get_is_vehicle_enterable(vehicle)
     local screen_vehicle = update_get_screen_vehicle()
-                        
+
     if screen_vehicle:get() and vehicle:get() then
         local team = vehicle:get_team()
         local def = vehicle:get_definition_index()
@@ -3902,7 +3941,7 @@ function get_grid_spacing()
 end
 
 function get_is_map_movement_allowed()
-    return g_selection:is_selection() == false 
+    return g_selection:is_selection() == false
         or g_selection.command_center_id > 0 and g_command_center_ui.is_place_turret
 end
 
