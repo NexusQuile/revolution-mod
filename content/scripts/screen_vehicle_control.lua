@@ -432,10 +432,12 @@ function render_selection_vehicle(screen_w, screen_h, vehicle)
 
                 ui:header(update_get_loc(e_loc.upp_actions))
 
-                if vehicle_definition_index ~= e_game_object_type.chassis_carrier and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge and def_index ~= e_game_object_type.chassis_land_robot_dog then
-                    local is_vehicle_hold_fire = vehicle:get_is_hold_fire()
-                    local is_hold_fire, is_modified = ui:checkbox(update_get_loc(e_loc.hold_fire), is_vehicle_hold_fire)
-                    if is_modified then vehicle:set_is_hold_fire(is_hold_fire) end
+                if not update_get_is_multiplayer() then
+                    if vehicle_definition_index ~= e_game_object_type.chassis_carrier and vehicle_definition_index ~= e_game_object_type.chassis_sea_barge and def_index ~= e_game_object_type.chassis_land_robot_dog then
+                        local is_vehicle_hold_fire = vehicle:get_is_hold_fire()
+                        local is_hold_fire, is_modified = ui:checkbox(update_get_loc(e_loc.hold_fire), is_vehicle_hold_fire)
+                        if is_modified then vehicle:set_is_hold_fire(is_hold_fire) end
+                    end
                 end
 
                 if ui:list_item(update_get_loc(e_loc.upp_center_to_vehicle), true) then
