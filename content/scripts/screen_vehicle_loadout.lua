@@ -131,8 +131,15 @@ function get_managed_vehicle()
     return this_vehicle
 end
 
-
 function update(screen_w, screen_h, ticks)
+    local st, err = pcall(_update, screen_w, screen_h, ticks)
+    if not st then
+        print(err)
+    end
+end
+
+
+function _update(screen_w, screen_h, ticks)
     if update_screen_overrides(screen_w, screen_h, ticks)  then return end
 
     if g_no_stock_counter < 1000 then
@@ -184,6 +191,10 @@ function update(screen_w, screen_h, ticks)
                 end
             end
         end
+    end
+
+    if call_custom_vehicle_loadout_update(screen_w, screen_h, ticks) then
+        return
     end
 
     local ui = g_ui
@@ -277,7 +288,6 @@ function update(screen_w, screen_h, ticks)
                     cy = cy + 11
                 end
 
-
                 update_ui_rectangle(0, cy, 63, 1, color_grey_dark)
                 cy = cy + 4
 
@@ -291,6 +301,10 @@ function update(screen_w, screen_h, ticks)
 
                 update_ui_image(4, cy, atlas_icons.icon_ammo, color_white, 0)
                 update_ui_text(13, cy, string.format("%.0f%%", attached_vehicle:get_ammo_factor() * 100), 64, 0, color_status_ok, 0)
+
+                cy = cy + 10
+
+                call_custom_ui_vehicle_loadout_chassis(ui, attached_vehicle)
 
                 local window = ui:begin_window("##vehicle", screen_w / 2, 14, screen_w / 2, screen_h - 14, nil, true, 1)
                     local region_w, region_h = ui:get_region()
@@ -314,7 +328,7 @@ function update(screen_w, screen_h, ticks)
                         local attachment_definition_index = attachment:get_definition_index()
                         if attachment_definition_index > 0 then
                             local attachment_data = get_attachment_data_by_definition_index(attachment_definition_index)
-                            update_ui_text(4, 93, g_hovered_attachment .. " " .. attachment_data.name_short, 96, 0, color_grey_mid, 0)
+                            -- update_ui_text(4, 93, g_hovered_attachment .. " " .. attachment_data.name_short, 96, 0, color_grey_mid, 0)
                         end
                     end
                 end
@@ -328,7 +342,7 @@ function update(screen_w, screen_h, ticks)
 
                     if attachment:get() then
                         local attachment_definition = attachment:get_definition_index()
-                        local selection_options = get_selected_vehicle_attachment_extra_options(vehicle, g_selected_attachment_index)
+                        local selection_options = get_selected_vehicle_attachment_extra_options(attached_vehicle, g_selected_attachment_index)
 
                         for i = 1, #selection_options do
                             if attachment_definition == selection_options[i].type then
@@ -378,7 +392,7 @@ end
 
 function input_event(event, action)
     g_ui:input_event(event, action)
-
+    call_custom_vehicle_input_event(event, action)
     if action == e_input_action.press then
         if g_screen_index == 0 then
             if event == e_input.back then

@@ -71,9 +71,38 @@ g_tab_fuel = {
     input_event = nil,
     input_pointer = nil,
     input_scroll = nil,
-    fuel_records = {},
+    fuel_records_crr = {},
+    fuel_records_islands = {},
     fuel_records_updated = 0,
     fuel_records_interval = 60,
+    fuel_records_max = 60,
+    update_fuel_record = function(team_id)
+        local now = update_get_logic_tick()
+        if g_tab_fuel.fuel_records_updated + g_tab_fuel.fuel_records_interval < now then
+            g_tab_fuel.fuel_records_updated = now
+            local carriers = get_carriers_fuel(team_id)
+            -- total for each carrier
+            for carrier, crr_fuel in pairs(carriers) do
+                if carrier and carrier:get() then
+                    local cid = carrier:get_id()
+                    if g_tab_fuel.fuel_records_crr[cid] == nil then
+                        g_tab_fuel.fuel_records_crr[cid] = {}
+                    end
+                    table_append_max(
+                            g_tab_fuel.fuel_records_crr[cid],
+                            crr_fuel,
+                            g_tab_fuel.fuel_records_max)
+                end
+            end
+
+            -- total for all islands
+            local islands = get_islands_fuel(team_id)
+            table_append_max(
+                    g_tab_fuel.fuel_records_islands,
+                    islands,
+                    g_tab_fuel.fuel_records_max)
+        end
+    end
 }
 
 g_tabs = {
@@ -259,8 +288,12 @@ function _update(screen_w, screen_h, ticks)
     g_screen_h = screen_h
     refresh_fow_islands()
     refresh_missile_data(false)
+    local st, err = pcall(g_tab_fuel.update_fuel_record, update_get_screen_team_id())
+    if not st then
+        print(err)
+    end
 
-    local st, err = pcall(update_barge_cap, ticks)
+    st, err = pcall(update_barge_cap, ticks)
     if not st then
         print(err)
     end
@@ -2915,6 +2948,33 @@ g_track_missile_callbacks = {
 -- fuel display
 ---
 
+function get_carriers_fuel(team)
+    -- get the fuel content of each carrier on a team
+    local data = {}
+    local carriers = get_team_carriers(team)
+    for _, carrier in pairs(carriers) do
+        local crr_fuel_stock = carrier:get_inventory_count_by_item_index(e_inventory_item.fuel_barrel)
+        crr_fuel_stock = crr_fuel_stock + (get_internal_fuel_size(e_game_object_type.chassis_carrier) * carrier:get_fuel_factor()/1000)
+        data[carrier] = crr_fuel_stock
+    end
+    return data
+end
+
+function get_islands_fuel(team)
+    -- get the total of fuel stocked on team islands
+    local island_count = update_get_tile_count()
+    local island_fuel = 0
+    for i = 0, island_count - 1 do
+        local island = update_get_tile_by_index(i)
+        if island:get() then
+            if island:get_team_control() == team then
+                island_fuel = island_fuel + island:get_facility_inventory_count(e_inventory_item.fuel_barrel)
+            end
+        end
+    end
+    return island_fuel
+end
+
 function tab_fuel_input_event(input, action)
     if input == e_input.back then
         return true
@@ -2954,10 +3014,8 @@ function tab_fuel_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_v
     imgui_table_header(g_ui, table_cols)
 
     -- carrier fuel
-    local carriers = get_team_carriers(update_get_screen_team_id())
-    for _, carrier in pairs(carriers) do
-        local crr_fuel_stock = carrier:get_inventory_count_by_item_index(e_inventory_item.fuel_barrel)
-        crr_fuel_stock = crr_fuel_stock + (get_internal_fuel_size(e_game_object_type.chassis_carrier) * carrier:get_fuel_factor()/1000)
+    local carriers = get_carriers_fuel(update_get_screen_team_id())
+    for carrier, crr_fuel_stock in pairs(carriers) do
         imgui_table_entry_grid(
                 g_ui,
                 {
@@ -3004,10 +3062,10 @@ function tab_fuel_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_v
                     land_fuel = land_fuel + unit_current_fuel
                     land_fuel_max = land_fuel_max + unit_max_fuel
                 end
-
             end
         end
     end
+
     local air_fuel_pct = "--"
     if air_fuel_max > 0 then
         air_fuel_pct = string.format("%d%%", round_int(100 * air_fuel / air_fuel_max))
@@ -3060,17 +3118,7 @@ function tab_fuel_render(screen_w, screen_h, x, y, w, h, is_tab_active, screen_v
             })
 
     -- total up the fuel stored at islands
-    local island_count = update_get_tile_count()
-    local island_fuel = 0
-    for i = 0, island_count - 1 do
-        local island = update_get_tile_by_index(i)
-        if island:get() then
-            if island:get_team_control() == screen_team then
-                island_fuel = island_fuel + island:get_facility_inventory_count(e_inventory_item.fuel_barrel)
-            end
-        end
-    end
-
+    local island_fuel = get_islands_fuel(update_get_screen_team_id())
     imgui_table_entry_grid(
             g_ui,
             {

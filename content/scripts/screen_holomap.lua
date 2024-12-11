@@ -19,6 +19,8 @@ g_map_x_offset = 0
 g_map_z_offset = 0
 g_map_size_offset = 0
 
+g_torpedo_speed = 50
+
 g_button_mode = 0
 g_is_map_pos_initialised = false
 g_override = false
@@ -75,6 +77,8 @@ holomap_startup_phases = {
 
 g_is_ruler = false
 g_is_ruler_set = false
+g_ruler_toggle = false
+g_is_ruler_last = false
 g_ruler_x = 0
 g_ruler_y = 0
 
@@ -171,6 +175,9 @@ end
 function _update(screen_w, screen_h, ticks)
     g_screen_w = screen_w
     g_screen_h = screen_h
+
+    g_ruler_toggle = g_is_ruler ~= g_is_ruler_last
+    g_is_ruler_last = g_is_ruler
 
     if g_first_update then
         g_first_update = false
@@ -944,6 +951,16 @@ function _update(screen_w, screen_h, ticks)
                     update_ui_image(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_icon, color, 0)
                     update_ui_text(attack_target_screen_pos_x - 4, attack_target_screen_pos_y - 4 - 8, attack_target_attack_type, 128, 0, color_black, 0)
                 end
+
+                draw_map_radar_state_indicator(vehicle, screen_pos_x, screen_pos_y, g_animation_time)
+                if vehicle_definition_index == e_game_object_type.chassis_carrier
+                    or vehicle_definition_index == e_game_object_type.chassis_sea_ship_light
+                    or vehicle_definition_index == e_game_object_type.chassis_sea_ship_heavy
+                    or get_is_vehicle_land(vehicle_definition_index) then
+                    if not get_vehicle_docked(vehicle) then
+                        draw_surface_radar_circle(vehicle, g_animation_time)
+                    end
+                end
                 
                 -- Waypoint cleanup for the carrier
                 if waypoint_remove > -1 then
@@ -1034,9 +1051,10 @@ function _update(screen_w, screen_h, ticks)
             cy = cy - 10
 
             local dist = vec2_dist(vec2(g_ruler_x, g_ruler_y), vec2(world_x, world_y))
+            plot_torpedo_intercepts(vec2(g_ruler_x, g_ruler_y), vec2(world_x, world_y))
 
             update_ui_image(cx, cy, atlas_icons.map_icon_loop, icon_col, 0)
-            update_ui_text(cx + 15, cy, string.format("Torpedo Delay: %.0f s", dist/50), 500, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("Torpedo Delay: %.0f s", dist/g_torpedo_speed), 500, 0, text_col, 0)
             cy = cy - 10
 
             if dist < 10000 then
@@ -1968,8 +1986,14 @@ function render_dashed_line(x0, y0, x1, y1, col)
     end
 end
 
-function render_weapon_radius(world_pos_x, world_pos_y, radius, screen_w, screen_h, c_color)
+function render_weapon_radius(world_pos_x, world_pos_y, radius, screen_w, screen_h, c_color, b_color, alt_steps, filled)
     local steps = 16
+    if filled == nil then
+        filled = true
+    end
+    if alt_steps ~= nil then
+        steps = alt_steps
+    end
     local step = math.pi * 2 / steps
     local angle_prev = 0
     local screen_pos_x, screen_pos_y = get_holomap_from_world(world_pos_x, world_pos_y, screen_w, screen_h)
@@ -1978,17 +2002,20 @@ function render_weapon_radius(world_pos_x, world_pos_y, radius, screen_w, screen
     if c_color == nil then
         c_color = color8(32, 8, 8, math.floor(32 * (math.sin(g_animation_time * 0.15) * 0.5 + 0.5)))
     end
+    if b_color == nil then
+        b_color = color8(32, 8, 8, 64)
+    end
 
     for i = 1, steps do
         local angle = step * i
         local x0, y0 = get_holomap_from_world(world_pos_x + math.cos(angle_prev) * radius, world_pos_y + math.sin(angle_prev) * radius, screen_w, screen_h)
         local x1, y1 = get_holomap_from_world(world_pos_x + math.cos(angle) * radius, world_pos_y + math.sin(angle) * radius, screen_w, screen_h)
-        local color = color8(32, 8, 8, 64)
+        local color = b_color
 
         update_ui_line(x0, y0, x1, y1, color)
-
-        update_ui_add_triangle(vec2(x0, y0), vec2(x1, y1), vec2(screen_pos_x, screen_pos_y), c_color)
-
+        if filled then
+            update_ui_add_triangle(vec2(x0, y0), vec2(x1, y1), vec2(screen_pos_x, screen_pos_y), c_color)
+        end
         angle_prev = angle
     end
 
@@ -2552,3 +2579,153 @@ function render_map_scale(screen_w, screen_h)
 end
 
 g_revolution_welcome = "Carrier Command 2 + Revolution Mod"
+
+
+local torpedo_ship_history = {}
+local torpedo_ship_history_last = 0
+
+function plot_torpedo_intercepts(origin, target)
+    if g_ruler_toggle then
+        torpedo_ship_history = {}
+    end
+    local now = update_get_logic_tick()
+    local elapsed = now - torpedo_ship_history_last
+    if elapsed > 10 then
+        torpedo_ship_history_last = now
+        update_vehicle_histories(torpedo_ship_history, target, 40000)
+    end
+    local dist = vec2_dist(origin, target)
+    local travel_time = dist / g_torpedo_speed
+
+    -- find all visible ships 50km within target point
+    iter_vehicle_histories(torpedo_ship_history, function(hist)
+        -- plot projected path in 10 sec increments
+        local start = 0
+        local p1 = hist:get_last_position()
+        if p1 then
+            local v = hist:get_velocity()
+            if v then
+                local interval = 10
+                local x2 = 0
+                local y2 = 0
+                while start < travel_time do
+                    start = start + interval
+                    local p2 = vec2(p1:x() + v:x() * interval, p1:y() + v:y() * interval)
+                    if p2 then
+                        -- plot
+                        local x1
+                        local y1
+                        x1, y1 = get_holomap_from_world( p1:x(), p1:y(), g_screen_w, g_screen_h)
+                        x2, y2 = get_holomap_from_world( p2:x(), p2:y(), g_screen_w, g_screen_h)
+                        if start % 20 == 0 then
+                            update_ui_line(x1, y1, x2, y2, color_enemy)
+                        end
+                        -- update_ui_rectangle_outline(x1 - 2, y1 - 2, 4, 4, color_enemy)
+                    end
+                    p1 = p2
+                end
+            end
+        end
+    end)
+end
+
+function draw_surface_radar_circle(vehicle, anim_time)
+    if vehicle and vehicle:get() then
+        local pos = vehicle:get_position_xz()
+        local team = vehicle:get_team()
+        local color = nil
+        local state = get_vehicle_radar_state(vehicle)
+        if state == "on" then
+            color = color8(0, 0, 64, 32)
+            local screen_vehicle = update_get_screen_vehicle()
+            if screen_vehicle and screen_vehicle:get() then
+                if screen_vehicle:get_id() == vehicle:get_id() then
+                    color = color8(0, 0, 64, 64)
+                end
+            end
+        end
+
+        local radar_attachment = _get_radar_attachment(vehicle)
+        local radar_range = _get_radar_detection_range(radar_attachment)
+
+        if state == "on" and radar_range > 0 and color ~= nil then
+            render_weapon_radius(
+                    pos:x(),
+                    pos:y(),
+                    radar_range,
+                    g_screen_w, g_screen_h, nil, color, 32, false)
+        end
+
+        -- max range this unit can detect other radars
+        local detect_range_sq = 1.6 * radar_range * 1.6 * radar_range
+        -- range where nearby radars are 100% visible
+        local min_range_sq = 0.9 * radar_range * 0.9 * radar_range
+
+        local v_screen_x, v_screen_y = get_holomap_from_world(pos:x(), pos:y(), g_screen_w, g_screen_h)
+
+        -- draw radar spokes to near-ish radars
+        iter_radars(function(radar)
+            local radar_team = radar:get_team()
+            if radar_team ~= team and get_vehicle_radar_state(radar) == "on" then
+                local radar_pos = radar:get_position_xz()
+                -- distance to this radar
+                local radar_dist_sq = vec2_dist_sq(pos, radar_pos)
+                local radar_max_dist_sq = detect_range_sq
+
+                if radar_dist_sq < radar_max_dist_sq and get_vehicle_radar_state(radar) == "on" then
+                    local radar_alt = get_unit_altitude(radar)
+                    local radar_sym = "S"
+                    local radar_class = _get_radar_attachment(radar)
+                    local radar_sight_range = _get_radar_detection_range(radar_class)
+                    if radar_sight_range < 10000 then
+                        -- if the radar is weak, do not show it
+                        local radar_dist = math.sqrt(radar_dist_sq)
+                        if radar_dist > 1.25 * radar_sight_range then
+                            return
+                        end
+                    end
+
+                    if radar_alt > 200 then
+                        radar_sym = "A"
+                    end
+
+                    local color = color8(64, 8, 0, 32 )
+                    local x, y
+                    if radar_dist_sq > min_range_sq  then
+                        -- target is out of our radar range
+                        if radar_alt < 350 then
+                            -- make distant low awacs seem like ground radar
+                            radar_sym = "S"
+                        end
+                        local outer_pos = world_clamp_to_direction(pos, radar_pos, 12000)
+                        local inner_pos = world_clamp_to_direction(pos, radar_pos, 10000)
+                        local x1, y1 = get_holomap_from_world(inner_pos:x(), inner_pos:y(), g_screen_w, g_screen_h)
+                        x, y = get_holomap_from_world(outer_pos:x(), outer_pos:y(), g_screen_w, g_screen_h)
+                        -- target spoke
+
+                        -- update_ui_circle(x1, y1, 4, 4, color8(64, 8, 0, 32))
+                        -- update_ui_line(x1, y1, x, y, color)
+                        draw_faded_line(v_screen_x, v_screen_y, x, y, color, 10)
+                        --update_ui_circle(x, y, 4, 4, color8(64, 8, 0, 32))
+
+                    else
+                        x, y = get_holomap_from_world(radar_pos:x(), radar_pos:y(), g_screen_w, g_screen_h)
+
+                        update_ui_line(v_screen_x, v_screen_y, x, y, color)
+
+                        --  diamond
+                        update_ui_line(x - 4, y, x, y - 4, color)
+                        update_ui_line(x, y -4, x + 4, y, color)
+                        update_ui_line(x + 4, y, x, y + 4, color)
+                        update_ui_line(x, y + 4, x - 4, y, color)
+
+                        y = y + 12
+                        x = x - 2
+                    end
+                    update_ui_text_mini(x, y, radar_sym, 2, 0, color)
+                    update_ui_rectangle_outline(x - 2, y - 2, 8, 9, color)
+                end
+            end
+        end)
+    end
+end

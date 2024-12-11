@@ -992,11 +992,16 @@ if g_revolution_hide_island_difficulty == nil then
     g_revolution_hide_island_difficulty = false
 end
 
+g_revolution_is_spectator = nil
+
 function get_is_spectator_mode()
-    if g_revolution_spectator_team ~= nil then
-        return g_revolution_spectator_team == update_get_screen_team_id()
+    if g_revolution_is_spectator == nil then
+        g_revolution_is_spectator = false
+        if g_revolution_spectator_team ~= nil then
+            g_revolution_is_spectator = g_revolution_spectator_team == update_get_screen_team_id()
+        end
     end
-    return false
+    return g_revolution_is_spectator
 end
 
 function get_team_name(team_id)
@@ -1700,8 +1705,43 @@ end
 --    print(err)
 --end
 
+function table_append_max(tab, value, max_num)
+    -- append a value to a list, trimming the list to max_num elements
+    table.insert(tab, value)
+    if #tab > max_num then
+        table.remove(tab, 1)
+    end
+end
+
+function world_clamp_to_direction(origin, target, max_range)
+    local dx = origin:x() - target:x()
+    local dy = origin:y() - target:y()
+    local b = math.atan(dy, dx)
+    local sy = math.sin(b) * max_range
+    local sx = math.cos(b) * max_range
+    return vec2(origin:x() - sx, origin:y() - sy)
+end
+
+function draw_faded_line(x1, y1, x2, y2, color, steps)
+    local alpha = color:a()
+    local dx = x1 - x2
+    local sx = dx / steps
+    local dy = y1 - y2
+    local sy = dy / steps
+    local alpha_step = alpha / steps
+    local x = x1
+    local y = y1
+    for i=1, steps do
+        update_ui_line(x, y, x - sx, y - sy, color8(color:r(), color:g(), color:b(), math.floor(alpha - alpha_step * i)))
+        x = x - sx
+        y = y - sy
+    end
+end
+
 g_rev_major = 1
-g_rev_minor = 3
+g_rev_minor = 4
+g_rev_patch = 1
+
 g_rev_mods = {
 
 }
