@@ -588,7 +588,7 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
 
     for mod_i, mod_name in pairs(g_rev_mods) do
         update_ui_text(
-            3, 5 + (mod_i * 6) , "+" .. mod_name, 220, 0, color_grey_dark, 0)
+            3, 5 + (mod_i * 8) , "+" .. mod_name, 220, 0, color_grey_dark, 0)
     end
 
     if is_active then
