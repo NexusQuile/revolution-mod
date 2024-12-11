@@ -453,7 +453,7 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
         else
             tab_map_zoom(1 - (g_input_axis.w * 0.1 * speed_multiplier), screen_w, screen_h)
         end
-        
+
         if g_is_mouse_mode then
             tab_map_zoom(1 - g_pointer_scroll * 0.15, screen_w, screen_h)
         end
@@ -584,11 +584,18 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
 
     update_ui_push_offset(x, y)
     update_ui_text(
-            3, 2, "Revolution 1.4 Beta", 220, 0, color_grey_dark, 0)
+            3, 2,
+            "Revolution "
+                    .. g_rev_major
+                    .. "."
+                    .. g_rev_minor
+                    .. "-"
+                    .. g_rev_patch,
+            220, 0, color_grey_dark, 0)
 
     for mod_i, mod_name in pairs(g_rev_mods) do
         update_ui_text(
-            3, 5 + (mod_i * 8) , "+" .. mod_name, 220, 0, color_grey_dark, 0)
+            3, 5 + (mod_i * 9) , "+" .. mod_name, 220, 0, color_grey_dark, 0)
     end
 
     if is_active then
