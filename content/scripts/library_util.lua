@@ -1737,3 +1737,7 @@ function draw_faded_line(x1, y1, x2, y2, color, steps)
         y = y - sy
     end
 end
+
+g_rev_mods = {
+
+}

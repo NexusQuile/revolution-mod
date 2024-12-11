@@ -586,6 +586,11 @@ function tab_map_render(screen_w, screen_h, x, y, w, h, delta_time, is_active)
     update_ui_text(
             3, 2, "Revolution 1.4 Beta", 220, 0, color_grey_dark, 0)
 
+    for mod_i, mod_name in pairs(g_rev_mods) do
+        update_ui_text(
+            3, 5 + (mod_i * 6) , "+" .. mod_name, 220, 0, color_grey_dark, 0)
+    end
+
     if is_active then
         local zoom_factor = invlerp(g_tab_map.camera_size, g_tab_map.camera_size_min, g_tab_map.camera_size_max)
 
