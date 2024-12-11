@@ -1699,3 +1699,9 @@ end
 --if not st then
 --    print(err)
 --end
+
+g_rev_major = 1
+g_rev_minor = 3
+g_rev_mods = {
+
+}
