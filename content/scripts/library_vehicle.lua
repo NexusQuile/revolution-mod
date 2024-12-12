@@ -984,65 +984,6 @@ function get_modded_radar_range(vehicle)
     return 0
 end
 
-function _get_unit_visible_by_modded_radar(vehicle, other_unit)
-    if vehicle:get() and other_unit:get() then
-        if vehicle:get_team() == other_unit:get_team() then
-            return false
-        end
-        if vehicle:get_id() ~= other_unit:get_id() then
-            local radar_unit_def = vehicle:get_definition_index()
-            local dist_sq = vec2_dist_sq(vehicle:get_position_xz(), other_unit:get_position_xz())
-            local mrr = get_modded_radar_range(vehicle)
-            local mrr_sq = mrr * mrr
-            if dist_sq < mrr_sq then
-                local unit_def = other_unit:get_definition_index()
-
-                -- target is within the max range of this radar
-                -- now filter out different target types
-
-                -- if this is an awacs or golfball, do not detect ships beyond 10km
-                if get_is_vehicle_air(radar_unit_def) or get_is_vehicle_land(radar_unit_def) then
-                    if get_is_vehicle_sea(unit_def) then
-                        local max_ship_range = get_awacs_max_ship_detection_range()
-                        if dist_sq > (max_ship_range * max_ship_range) then
-                            return false
-                        end
-                    end
-                end
-
-                if get_is_ship_fish(vehicle:get_definition_index()) then
-                    -- needlefish can all see anything less than 500m away
-                    if dist_sq < 250000 then
-                        return true
-                    end
-                end
-
-                -- print(string.format("a %d b %d dist = %d", needlefish:get_id(), unit:get_id(), math.floor(dist)))
-                local radar_type = _get_radar_attachment(vehicle)
-                if radar_type == e_game_object_type.attachment_radar_awacs
-                    or radar_type == e_game_object_type.attachment_radar_golfball
-                then
-                    -- awacs and gnd radar can see ships and aircraft at range
-                    return get_is_vehicle_air(unit_def) or get_is_vehicle_sea(unit_def)
-                elseif radar_type == e_game_object_type.attachment_turret_carrier_ciws then
-                    -- ciws fish can see only aircraft,
-                    return get_is_vehicle_air(unit_def)
-                elseif radar_type == e_game_object_type.attachment_turret_carrier_torpedo then
-                    -- torp fish can see only ships
-                    return get_is_vehicle_sea(unit_def)
-                elseif radar_type == e_game_object_type.attachment_turret_carrier_missile_silo then
-                    -- cruise fish can see only ships
-                    return get_is_vehicle_sea(unit_def)
-                elseif radar_type == e_game_object_type.attachment_turret_carrier_main_gun then
-                    -- gun fish can see only ships
-                    return get_is_vehicle_sea(unit_def)
-                end
-            end
-        end
-    end
-    return false
-end
-
 function get_vehicle_radar_state(vehicle)
     local state = nil
     if vehicle and vehicle:get() then
