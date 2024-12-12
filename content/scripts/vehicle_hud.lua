@@ -3566,7 +3566,9 @@ function render_attachment_vision(screen_w, screen_h, map_data, vehicle, attachm
             data.dist_sq = dist_sq
             data.is_laser_target = laser_consuming_type == data.type and laser_id == data.id
             data.is_observed = v:get_is_observation_revealed()
-
+            if not data.is_observed then
+                data.is_observed = get_is_visible_by_modded_radar(v)
+            end
             table.insert(target_data, data)
 
             if data.id == g_selected_target_id and data.type == g_selected_target_type then
