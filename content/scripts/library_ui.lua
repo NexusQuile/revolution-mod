@@ -2730,34 +2730,37 @@ function imgui_carrier_docking_bays(ui, carrier_vehicle, item_spacing, column_sp
     return selected_bay_index, is_action
 end
 
-function get_override_vehicle_loadout_rows(vehicle)
+function get_override_vehicle_loadout_rows(vehicle, current_rows)
     local vehicle_definition_index = vehicle:get_definition_index()
-    local dynamic = nil
+    local replaced_rows = nil
     if g_revolution_override_attachment_options ~= nil then
         -- overrides available
         local ov_type = g_revolution_override_attachment_options[vehicle_definition_index]
         if ov_type ~= nil then
             if ov_type["rows"] ~= nil then
-                dynamic = ov_type["rows"]
+                replaced_rows = ov_type["rows"]
             end
         end
     end
 
-    if dynamic == nil and g_revolution_attachment_defaults ~= nil then
+    if replaced_rows == nil and g_revolution_attachment_defaults ~= nil then
         -- revolution changes
         local ov_type = g_revolution_attachment_defaults[vehicle_definition_index]
         if ov_type ~= nil then
             if ov_type["rows"] ~= nil then
-                dynamic = ov_type["rows"]
+                replaced_rows = ov_type["rows"]
             end
         end
     end
-
-    if custom_dynamic_vehicle_loadout_rows ~= nil then
-        dynamic = custom_dynamic_vehicle_loadout_rows(vehicle, dynamic)
+    if replaced_rows ~= nil then
+        current_rows = replaced_rows
     end
 
-    return dynamic
+    if custom_dynamic_vehicle_loadout_rows ~= nil then
+        current_rows = custom_dynamic_vehicle_loadout_rows(vehicle, current_rows)
+    end
+
+    return current_rows
 end
 
 function get_override_vehicle_loadout_options(vehicle, attachment_index)
@@ -2774,6 +2777,7 @@ function get_override_vehicle_loadout_options(vehicle, attachment_index)
             end
         end
     end
+
     if dynamic == nil and g_revolution_attachment_defaults ~= nil then
         -- revolution changes
         local ov_type = g_revolution_attachment_defaults[vehicle_definition_index]
@@ -2796,10 +2800,6 @@ function get_ui_vehicle_chassis_attachments(vehicle)
     local vehicle_attachment_count = vehicle:get_attachment_count()
 
     local vehicle_attachment_rows = {}
-    local override_rows = get_override_vehicle_loadout_rows(vehicle)
-    if override_rows ~= nil then
-        return override_rows
-    end
 
     if vehicle_definition_index == e_game_object_type.chassis_land_wheel_light then
         vehicle_attachment_rows = {
@@ -2969,7 +2969,7 @@ function get_ui_vehicle_chassis_attachments(vehicle)
         }
     end
 
-    return vehicle_attachment_rows
+    return get_override_vehicle_loadout_rows(vehicle, vehicle_attachment_rows)
 end
 
 g_hovered_attachment = -1

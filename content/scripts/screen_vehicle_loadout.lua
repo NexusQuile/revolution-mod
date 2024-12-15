@@ -106,10 +106,13 @@ function parse()
     g_selected_option_index = parse_s32("", g_selected_option_index)
 end
 
+g_screen_name = nil
+
 function begin()
     begin_load()
     begin_load_inventory_data()
     g_ui = lib_imgui:create_ui()
+    g_screen_name = begin_get_screen_name()
 end
 
 g_sanitised_attachments = false
@@ -153,7 +156,9 @@ function _update(screen_w, screen_h, ticks)
         header_col = color_friendly
     end
 
-    if not update_get_is_focus_local() and not g_sanitised_attachments then
+    if g_screen_name == "screen_inv_r" and not g_sanitised_attachments then
+        g_sanitised_attachments = true
+
         if this_vehicle:get_definition_index() == e_game_object_type.chassis_carrier then
             g_sanitised_attachments = true
             sanitise_loadout(this_vehicle, 0)
@@ -173,20 +178,20 @@ function _update(screen_w, screen_h, ticks)
             sanitise_loadout(this_vehicle, 14)
             sanitise_loadout(this_vehicle, 15)
             -- find docked carrier
-            if get_vehicle_docked(this_vehicle) then
-                local drydock = find_team_drydock(this_vehicle:get_team())
-                if drydock ~= nil then
-                    -- attach the VLS
-                    local slots = this_vehicle:get_attachment_count()
-                    if slots >= 18 then
-                        -- has laser VLS
-                        local a14 = this_vehicle:get_attachment(14)
-                        if a14:get_definition_index() == -1 then
-                            drydock:set_attached_vehicle_attachment(0, 14, e_game_object_type.attachment_hardpoint_missile_laser)
-                            drydock:set_attached_vehicle_attachment(0, 15, e_game_object_type.attachment_hardpoint_missile_laser)
-                            drydock:set_attached_vehicle_attachment(0, 16, e_game_object_type.attachment_hardpoint_missile_laser)
-                            drydock:set_attached_vehicle_attachment(0, 17, e_game_object_type.attachment_hardpoint_missile_laser)
-                        end
+        end
+        if get_vehicle_docked(this_vehicle) then
+            local drydock = find_team_drydock(this_vehicle:get_team())
+            if drydock ~= nil then
+                -- attach the VLS
+                local slots = this_vehicle:get_attachment_count()
+                if slots >= 18 then
+                    -- has laser VLS
+                    local a14 = this_vehicle:get_attachment(14)
+                    if a14:get_definition_index() == -1 then
+                        drydock:set_attached_vehicle_attachment(0, 14, e_game_object_type.attachment_hardpoint_missile_laser)
+                        drydock:set_attached_vehicle_attachment(0, 15, e_game_object_type.attachment_hardpoint_missile_laser)
+                        drydock:set_attached_vehicle_attachment(0, 16, e_game_object_type.attachment_hardpoint_missile_laser)
+                        drydock:set_attached_vehicle_attachment(0, 17, e_game_object_type.attachment_hardpoint_missile_laser)
                     end
                 end
             end
