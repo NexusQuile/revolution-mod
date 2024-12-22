@@ -72,7 +72,7 @@ g_notification = {
 
     update = function(self, delta_time, vehicle)
         self.time = self.time + delta_time
-
+        g_laser_active = false
         if vehicle:get() and g_is_connected then
             local vehicle_id = vehicle:get_id()
             local vehicle_control_mode = vehicle:get_control_mode()
@@ -158,6 +158,8 @@ function update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, ve
 end
 
 function real_update(screen_w, screen_h, tick_fraction, delta_time, local_peer_id, vehicle, map_data)
+    g_screen_w = screen_w
+    g_screen_h = screen_h
     update_animations(delta_time, vehicle)
     -- update_hover_data()
     g_notification:update(delta_time, vehicle)
@@ -2652,6 +2654,52 @@ function render_attachment_range(hud_pos, attachment, is_camera)
     local is_in_range = iff( is_camera, hit_dist <= 9999, attachment:get_is_hitscan_in_range() )
     local col = color8(0, 255, 0, 255)
     local col_red = color8(255, 0, 0, 255)
+
+    -- laser
+    if attachment:get_weapon_target_state() == e_team_target_state.active then
+        local hsp = attachment:get_hitscan_position()
+        local sp, clamped = update_world_to_screen(hsp)
+        local v_jitter = math.random(-4,4)
+        local h_jitter = math.random(0, 5)
+        local v = v_jitter + g_screen_h
+        local h = h_jitter + g_screen_w
+
+        local dx = (g_screen_w - sp:x())/10
+        local dy = (g_screen_h - sp:y())/10
+        local steps = math.random(12, 35)
+        local laser_alpha_max = 240
+        local step_alpha = math.floor(laser_alpha_max / steps)
+        for i = steps, 0, -1 do
+            local wx = i * dx
+            local wy = i * dy
+            if i > 0 then
+                local step_col = color8(255, 0, 0, i * step_alpha)
+                update_ui_line(
+                        h + 1,
+                        v,
+                        sp:x() + wx + h_jitter,
+                        sp:y() + wy, step_col)
+
+            end
+        end
+        update_ui_text(
+                g_screen_w - 80,
+                g_screen_h - 30,
+                "LASER ON",
+                75, 0, col_red, 0
+        )
+        update_ui_rectangle_outline(
+                g_screen_w - 82,
+                g_screen_h - 32,
+                51, 12, col_red
+        )
+
+        --update_ui_line(
+        --        g_screen_w + 1,
+        --        v,
+        --        sp:x(),
+        --        sp:y(), col_laser)
+    end
 
     if is_in_range then
         update_ui_text(hud_pos:x() + 50, hud_pos:y() + 50, string.format("%.0f", hit_dist) .. update_get_loc(e_loc.acronym_meters), 200, 0, col, 0)
