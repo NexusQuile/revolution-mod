@@ -1144,7 +1144,7 @@ function _update(screen_w, screen_h, ticks)
                 if self and self:get() then
                     if self:get_attached_parent_id() ~= 0 then
                         update_ui_text(32, 13, get_ship_name(update_get_screen_vehicle()) .. " DOCKED", 480, 0, color_white, 0)
-                        update_ui_text_mini(32, 13 * 2, g_revolution_welcome, 480, 0, color_white, 0)
+                        update_ui_text(32, 13 * 2, g_revolution_welcome, 480, 0, color_white, 0)
                     end
                 end
             end
@@ -1153,7 +1153,7 @@ function _update(screen_w, screen_h, ticks)
                 update_ui_text_mini(screen_w / 9, screen_h - 23,
                         "Revolution Spectator Studio TM", 400, 0, color_grey_mid, 0)
             else
-                update_ui_text_mini(screen_w / 3, screen_h - 29,
+                update_ui_text(screen_w / 3, screen_h - 29,
                         string.format("ACC %s",
                                 get_ship_name(update_get_screen_vehicle())), 400, 0, color_grey_mid, 0)
 
@@ -2722,8 +2722,8 @@ function draw_surface_radar_circle(vehicle, anim_time)
                         y = y + 12
                         x = x - 2
                     end
-                    update_ui_text_mini(x, y, radar_sym, 2, 0, color)
-                    update_ui_rectangle_outline(x - 2, y - 2, 8, 9, color)
+                    update_ui_text(x, y, radar_sym, 2, 0, color, 0)
+                    update_ui_rectangle_outline(x - 2, y - 1, 9, 11, color)
                 end
             end
         end)

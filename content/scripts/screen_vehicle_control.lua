@@ -1159,11 +1159,9 @@ end
 function _update(screen_w, screen_h, ticks)
     g_screen_w = screen_w
     g_screen_h = screen_h
+
     g_is_mouse_mode = g_is_pointer_hovered and update_get_active_input_type() == e_active_input.keyboard
     g_animation_time = g_animation_time + ticks
-    refresh_modded_radar_cache()
-    refresh_fow_islands()
-    refresh_missile_data(true)
 
     g_hover_callback = nil
 
@@ -1507,11 +1505,7 @@ function _update(screen_w, screen_h, ticks)
                         local island_name = island:get_name()
                         local screen_pos_x, screen_pos_y = get_screen_from_world(island_position:x(), island_position:y() + 3000.0, g_camera_pos_x, g_camera_pos_y, g_camera_size, screen_w, screen_h)
 
-                        if g_camera_size < 27000 then
-                            update_ui_text(screen_pos_x - 64, screen_pos_y - 9, island_name, 128, 1, island_color, 0)
-                        else
-                            update_ui_text_mini(screen_pos_x - 64, screen_pos_y - 8, island_name, 128, 1, island_color, 0)
-                        end
+                        update_ui_text(screen_pos_x - 64, screen_pos_y - 9, island_name, 128, 1, island_color, 0)
 
                         if island:get_team_control() == screen_team then
                             if is_placing_turret == false then
@@ -3477,8 +3471,8 @@ function render_map_scale(screen_w, screen_h)
 
         update_ui_push_offset(screen_w - dx/2 - 15, screen_h - 20)
 
-        local w = update_ui_get_text_size_mini(text)
-        update_ui_text_mini(-w/2, -8, text, w, 1, color_grey_mid, 0)
+        local w = update_ui_get_text_size(text, 32, 0)
+        update_ui_text(-w/2, -10, text, w, 1, color_grey_mid, 0)
         
         if inbound then
             update_ui_rectangle(-dx/2, 0, 1, 4, color_grey_dark)
@@ -3502,12 +3496,12 @@ function render_cursor_info(screen_w, screen_h, world_pos_drag_start)
     local icon_col = color_grey_mid
     local text_col = color_grey_dark
 
-    update_ui_mini_text(cx, cy, "X", icon_col)
-    update_ui_mini_text(cx + 9, cy, string.format("%.0f", world_x), text_col)
-    cy = cy + 6
+    update_ui_text(cx, cy, "X", 100, 0, icon_col, 0)
+    update_ui_text(cx + 15, cy, string.format("%.0f", world_x), 100, 0, text_col, 0)
+    cy = cy + 10
 
-    update_ui_mini_text(cx, cy, "Y", icon_col)
-    update_ui_mini_text(cx + 9, cy, string.format("%.0f", world_y), text_col)
+    update_ui_text(cx, cy, "Y", 100, 0, icon_col, 0)
+    update_ui_text(cx + 15, cy, string.format("%.0f", world_y), 100, 0, text_col, 0)
     cy = cy + 10
 
     if world_pos_drag_start then
@@ -3518,7 +3512,7 @@ function render_cursor_info(screen_w, screen_h, world_pos_drag_start)
             update_ui_text(cx + 15, cy, string.format("%.0f ", dist) .. update_get_loc(e_loc.acronym_meters), 100, 0, text_col, 0)
         else
             update_ui_image(cx, cy, atlas_icons.column_distance, icon_col, 0)
-            update_ui_text_mini(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
+            update_ui_text(cx + 15, cy, string.format("%.2f ", dist / 1000) .. update_get_loc(e_loc.acronym_kilometers), 100, 0, text_col, 0)
         end
 
         cy = cy + 10

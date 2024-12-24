@@ -1103,7 +1103,7 @@ function render_attachment_info(info_pos, map_data, vehicle, attachment, alpha, 
 
     -- render nearest island name
     local nearest_island = get_nearest_island_name(vehicle)
-    update_ui_text_mini(pos:x(), pos:y(), string.upper(nearest_island), 200, 0, colors.green, 0)
+    update_ui_text(pos:x(), pos:y(), string.upper(nearest_island), 200, 0, colors.green, 0)
     pos:y(pos:y() + 10)
 
     -- render vehicle id
@@ -4636,9 +4636,9 @@ Variometer = {
         local mins_remaining = fuel_count / fuel_per_min
 
         -- total %
-        update_ui_text_mini(
-                pos:x() - 37,
-                pos:y() + 158,
+        update_ui_text(
+                pos:x() - 38,
+                pos:y() + 140,
                 string.format("%2.1f %s", fuel_count * 100, "%"),
                 64, 0, fuel_number_col, 0)
 
@@ -4651,15 +4651,15 @@ Variometer = {
             fuel_time_mins = string.format("%3.0f mins", mins_remaining)
         end
         -- % / min
-        update_ui_text_mini(
+        update_ui_text(
                 pos:x() - 32,
-                pos:y() + 164,
+                pos:y() + 150,
                 fuel_use_per_min,
                 64, 0, col, 0)
         -- time
-        update_ui_text_mini(
+        update_ui_text(
                 pos:x() - 32,
-                pos:y() + 170,
+                pos:y() + 160,
                 fuel_time_mins,
                 200, 0, fuel_number_col, 0)
 
