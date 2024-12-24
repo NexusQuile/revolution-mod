@@ -1162,6 +1162,9 @@ function _update(screen_w, screen_h, ticks)
 
     g_is_mouse_mode = g_is_pointer_hovered and update_get_active_input_type() == e_active_input.keyboard
     g_animation_time = g_animation_time + ticks
+    refresh_modded_radar_cache()
+    refresh_fow_islands()
+    refresh_missile_data(true)
 
     g_hover_callback = nil
 
