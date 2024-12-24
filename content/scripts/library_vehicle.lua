@@ -2068,7 +2068,18 @@ function update_team_holomap_cursor(team_id, x, y)
     end
 end
 
+g_last_hm_cursor_team = 0
+g_last_hm_cursor_x = 0
+g_last_hm_cursor_y = 0
+
 function _update_team_holomap_cursor(team_id, x, y)
+    if g_last_hm_cursor_team == team and g_last_hm_cursor_x == x and g_last_hm_cursor_y == y then
+        return
+    end
+    g_last_hm_cursor_team = team_id
+    g_last_hm_cursor_x = x
+    g_last_hm_cursor_y = y
+
     local current = get_team_holomap_cursor_waypoint(team_id)
     local drydock = find_team_drydock(team_id)
 
