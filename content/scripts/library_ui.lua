@@ -3071,7 +3071,8 @@ function imgui_vehicle_chassis_loadout(ui, vehicle, selected_bay_index)
 
                     if attachment:get_fuel_capacity() > 0 then
                         total_capacity = total_capacity + 1
-                        resupply_factor = resupply_factor + attachment:get_fuel_factor()
+                        --resupply_factor = resupply_factor + attachment:get_fuel_factor()
+						resupply_factor = attachment:get_fuel_remaining() / attachment:get_fuel_capacity()
                     end
 
                     resupply_factor = iff(total_capacity == 0, 1, resupply_factor / total_capacity)
